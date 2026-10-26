@@ -64,6 +64,27 @@ async function handle(event: Stripe.Event, request: NextRequest) {
       const { stripeSubscriptionId, metadataId } = invoiceSubscription(invoice);
       const subscriptionId = await findSubscriptionId(stripeSubscriptionId, metadataId);
       if (!subscriptionId) return;
+
+      // Migración manual → Stripe: la factura inicial es de 0 € (prueba hasta la
+      // renovación). Solo cambiamos el modo de cobro; el periodo ya estaba pagado.
+      const isMigration = invoice.parent?.subscription_details?.metadata?.migration === "1";
+      if (isMigration && invoice.billing_reason === "subscription_create" && invoice.amount_paid === 0) {
+        const { data: sub } = await admin
+          .from("subscriptions")
+          .update({ billing_mode: "stripe", stripe_subscription_id: stripeSubscriptionId })
+          .eq("id", subscriptionId)
+          .select("client_id, discount_breakdown")
+          .single();
+        if (sub) {
+          await admin.from("clients").update({ billing_mode: "stripe" }).eq("id", sub.client_id);
+          if (stripeSubscriptionId) {
+            const lines = await recurringLinesFor(subscriptionId, sub.discount_breakdown);
+            await attachRecurringDiscounts(stripe, stripeSubscriptionId, subscriptionId, lines);
+          }
+        }
+        return;
+      }
+
       const line = invoice.lines.data[0];
       const result = await applySubscriptionPayment(
         {

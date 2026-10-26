@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Bell } from "lucide-react";
 import { requireStaff } from "@/lib/auth/dal";
+import { createClient } from "@/lib/supabase/server";
 import { Logo } from "@/components/twj/logo";
 import { ThemeToggle } from "@/components/twj/theme-toggle";
 import { signOut } from "@/features/auth/actions";
@@ -7,6 +9,12 @@ import { PanelBottomNav, PanelSideNav } from "./panel-nav";
 
 export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
   const viewer = await requireStaff();
+  const supabase = await createClient();
+  const { count: unread } = await supabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("profile_id", viewer.id)
+    .is("read_at", null);
 
   return (
     <div className="flex min-h-dvh">
@@ -32,7 +40,19 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
           <Link href="/panel" className="lg:hidden">
             <Logo compact className="text-2xl" />
           </Link>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-1">
+            <Link
+              href="/panel/avisos"
+              className="relative rounded-md p-2 hover:bg-muted"
+              aria-label={`Avisos (${unread ?? 0} sin leer)`}
+            >
+              <Bell className="size-5" aria-hidden />
+              {unread ? (
+                <span className="absolute top-0.5 right-0.5 min-w-4 rounded-full bg-destructive px-1 text-center text-[10px] leading-4 font-bold text-white">
+                  {unread > 99 ? "99+" : unread}
+                </span>
+              ) : null}
+            </Link>
             <ThemeToggle />
           </div>
         </header>

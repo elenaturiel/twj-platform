@@ -14,11 +14,7 @@ export function newSquadCode() {
   return `SQUAD-${Array.from(bytes, (b) => alphabet[b % alphabet.length]).join("")}`;
 }
 
-/**
- * Recalcula el descuento de todos los miembros activos de un squad (cuando
- * alguien entra o se da de baja: todos suben o bajan de tramo a la vez).
- * Afecta a la PRÓXIMA cuota: no se rehacen cobros ya hechos.
- */
+/** Si alguien entra o se da de baja, todos los miembros activos suben o bajan de tramo a la vez. */
 export async function recomputeSquad(squadId: string) {
   const admin = createAdminClient();
   const { data: members } = await admin
@@ -26,67 +22,87 @@ export async function recomputeSquad(squadId: string) {
     .select("client_id")
     .eq("squad_id", squadId)
     .is("left_at", null);
+  for (const m of members ?? []) await recomputeClientSubscription(m.client_id);
+}
+
+/**
+ * Recalcula el importe de la suscripción viva de un cliente con sus descuentos
+ * vigentes (squad según miembros activos, estudiante si no está rechazado,
+ * fundador si ya lo tenía, anual…). Afecta a la PRÓXIMA cuota.
+ */
+export async function recomputeClientSubscription(clientId: string) {
+  const admin = createAdminClient();
   const maxTotalPercent = await maxTotalPercentSetting(admin);
+  const { data: sub } = await admin
+    .from("subscriptions")
+    .select("id, billing_mode, billing_interval, list_price_cents, stripe_subscription_id, plans(key, price_cents)")
+    .eq("client_id", clientId)
+    .in("status", ["active", "past_due"])
+    .maybeSingle();
+  if (!sub?.plans) return;
 
-  for (const m of members ?? []) {
-    const { data: sub } = await admin
-      .from("subscriptions")
-      .select("id, billing_mode, billing_interval, list_price_cents, stripe_subscription_id, plans(key, price_cents)")
-      .eq("client_id", m.client_id)
-      .in("status", ["active", "past_due"])
-      .maybeSingle();
-    if (!sub?.plans || sub.plans.price_cents === null) continue;
+  const { data: redemptions } = await admin
+    .from("discount_redemptions")
+    .select("id, status, discounts!inner(kind)")
+    .eq("subscription_id", sub.id)
+    .in("status", ["applied", "reserved"]);
+  const has = (kind: string) => (redemptions ?? []).some((r) => r.discounts?.kind === kind);
 
-    const { count: student } = await admin
-      .from("discount_redemptions")
-      .select("id, discounts!inner(kind)", { count: "exact", head: true })
-      .eq("client_id", m.client_id)
-      .eq("subscription_id", sub.id)
-      .eq("status", "applied")
-      .eq("discounts.kind", "student");
+  const { data: membership } = await admin
+    .from("squad_members")
+    .select("squad_id")
+    .eq("client_id", clientId)
+    .is("left_at", null)
+    .maybeSingle();
+  const friends = membership ? await activeSquadFriends(admin, membership.squad_id, clientId) : 0;
 
-    const friends = await activeSquadFriends(admin, squadId, m.client_id);
-    const interval = sub.billing_interval as BillingInterval;
-    const resolved = await resolveDiscounts(admin, {
-      planKey: sub.plans.key,
-      interval,
-      clientId: null, // recalcular: no bloquear por "ya usado"
-      studentClaim: (student ?? 0) > 0,
-      squadFriends: friends,
+  const interval = sub.billing_interval as BillingInterval;
+  const resolved = await resolveDiscounts(admin, {
+    planKey: sub.plans.key,
+    interval,
+    clientId: null, // recálculo: no bloquear por "ya usado"
+    studentClaim: has("student"),
+    squadFriends: friends,
+  });
+  // El fundador solo se conserva si ya lo tenía en esta suscripción
+  const applied = resolved.applied.filter((a) => a.kind !== "founder" || has("founder"));
+
+  // Precio grandfathered: se respeta el precio de lista con el que entró
+  const q = quote({
+    monthlyPriceCents: Math.round(sub.list_price_cents / (interval === "year" ? 12 : 1)),
+    interval,
+    discounts: applied,
+    maxTotalPercent,
+  });
+  await admin
+    .from("subscriptions")
+    .update({
+      amount_cents: q.totalCents,
+      discount_breakdown: q.lines.map((l) => ({
+        kind: l.kind,
+        label: l.label,
+        amount_cents: l.amountCents,
+        percent: l.percent ?? null,
+      })),
+    })
+    .eq("id", sub.id);
+
+  // Squad: deja constancia del canje (para métricas) si ahora aplica
+  const squadLine = q.lines.find((l) => l.kind === "squad");
+  if (squadLine && !has("squad")) {
+    await admin.from("discount_redemptions").insert({
+      discount_id: squadLine.discountId,
+      client_id: clientId,
+      subscription_id: sub.id,
+      status: "applied",
+      applied_at: new Date().toISOString(),
+      snapshot: { percent: squadLine.percent ?? null },
     });
-    // El fundador solo se conserva si ya lo tenía aplicado en esta suscripción
-    const { data: founderApplied } = await admin
-      .from("discount_redemptions")
-      .select("id, discounts!inner(kind)")
-      .eq("subscription_id", sub.id)
-      .eq("status", "applied")
-      .eq("discounts.kind", "founder")
-      .maybeSingle();
-    const applied = resolved.applied.filter((a) => a.kind !== "founder" || founderApplied);
-
-    // Precio grandfathered: se respeta el list_price de la suscripción
-    const q = quote({
-      monthlyPriceCents: Math.round(sub.list_price_cents / (interval === "year" ? 12 : 1)),
-      interval,
-      discounts: applied,
-      maxTotalPercent,
-    });
-    await admin
-      .from("subscriptions")
-      .update({
-        amount_cents: q.totalCents,
-        discount_breakdown: q.lines.map((l) => ({
-          kind: l.kind,
-          label: l.label,
-          amount_cents: l.amountCents,
-          percent: l.percent ?? null,
-        })),
-      })
-      .eq("id", sub.id);
-
-    const stripe = getStripe();
-    if (stripe && sub.billing_mode === "stripe" && sub.stripe_subscription_id) {
-      await attachRecurringDiscounts(stripe, sub.stripe_subscription_id, sub.id, q.lines);
-    }
   }
+
+  const stripe = getStripe();
+  if (stripe && sub.billing_mode === "stripe" && sub.stripe_subscription_id) {
+    await attachRecurringDiscounts(stripe, sub.stripe_subscription_id, sub.id, q.lines);
+  }
+  return q;
 }

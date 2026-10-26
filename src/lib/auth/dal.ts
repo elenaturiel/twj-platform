@@ -139,3 +139,15 @@ export async function requireClientWithAccess(): Promise<ClientContext> {
 export function homePathFor(role: Role) {
   return role === "client" ? "/hoy" : "/panel";
 }
+
+export type StaffScope = "clients" | "health" | "billing" | "business" | "settings" | "team";
+
+/** Staff con un permiso concreto (owner los tiene todos). */
+export async function requireScope(scope: StaffScope): Promise<Viewer> {
+  const viewer = await requireStaff();
+  if (viewer.role === "owner") return viewer;
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("has_scope", { p_scope: scope });
+  if (!data) redirect("/panel?sin-permiso=" + scope);
+  return viewer;
+}

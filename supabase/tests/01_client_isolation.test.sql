@@ -11,8 +11,8 @@ values
   ('00000000-0000-0000-0000-0000000000ad', 'admin@test.local', '{"full_name":"Admin"}', 'authenticated', 'authenticated');
 update public.profiles set role = 'admin' where id = '00000000-0000-0000-0000-0000000000ad';
 
-insert into public.clients (id, profile_id, status, plan_id)
-select v.id::uuid, v.profile::uuid, 'active', (select id from public.plans where key = 'all_in')
+insert into public.clients (id, profile_id, status, plan_id, onboarding_completed_at)
+select v.id::uuid, v.profile::uuid, 'active', (select id from public.plans where key = 'all_in'), now()
 from (values
   ('10000000-0000-0000-0000-00000000000a', '00000000-0000-0000-0000-00000000000a'),
   ('10000000-0000-0000-0000-00000000000b', '00000000-0000-0000-0000-00000000000b')
@@ -100,13 +100,13 @@ select is((select count(*)::int from public.profile_changes where client_id = '1
 -- ── Como admin ────────────────────────────────────────────────────────────────
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000ad","role":"authenticated"}';
 select is(public.is_staff(), true, 'admin es staff');
-select is((select count(*)::int from public.clients), 2, 'admin ve todos los clientes');
+select is((select count(*)::int from public.clients where id in ('10000000-0000-0000-0000-00000000000a', '10000000-0000-0000-0000-00000000000b')), 2, 'admin ve todos los clientes');
 select is((select count(*)::int from public.health_screenings), 0, 'admin sin scope health no ve datos de salud');
 reset role;
 insert into public.staff_permissions (profile_id, scope) values ('00000000-0000-0000-0000-0000000000ad', 'health');
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000ad","role":"authenticated"}';
-select is((select count(*)::int from public.health_screenings), 1, 'admin con scope health ve datos de salud');
+select is((select count(*)::int from public.health_screenings where client_id = '10000000-0000-0000-0000-00000000000b'), 1, 'admin con scope health ve datos de salud');
 
 -- ── Anónimo ───────────────────────────────────────────────────────────────────
 set local role anon;
