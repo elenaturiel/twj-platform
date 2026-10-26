@@ -1,4 +1,44 @@
-# TWJ App — Plan de arquitectura (v0.1, pendiente de OK)
+# TWJ App — Plan de arquitectura (v0.2, pendiente de OK)
+
+## 0. Decisiones tomadas (26-10-2026)
+
+Respuestas de Elena + lo publicado en www.trainwithjaime.es/precios y /servicios (consultado el 26-10-2026):
+
+| Tema | Decisión |
+|---|---|
+| Peak | **No se muestran precios en la app.** Pack cerrado de pago único (8, 10 o 12 semanas) para un evento. Flujo: solicitud → Jaime fija el precio en el panel → enlace de pago (Stripe, pago único) o cobro manual. El importe vive solo en el panel/BD, nunca en la UI pública ni en el código. |
+| Precio fundador | MVP a 59,90 € (en vez de 64,90 €) **para siempre** mientras la suscripción siga viva; primeras 6 plazas. **Si se da de baja y vuelve, lo pierde** (la redención queda `revoked` al cancelar y no se puede reutilizar). |
+| Estudiante | −10 % con carné universitario, **verificado manualmente por Jaime** (subida de foto + aprobación). |
+| Squad (según la web) | Alta conjunta, solo **Rookie y All In**: 2 amigos → −15 % cada uno; 3 o más → −25 % cada uno. **Tope en 3 amigos** (el descuento no sigue subiendo). |
+| Acumulación | Squad + estudiante **se acumulan**. |
+| Cambio de precios | Los clientes actuales **mantienen su precio** (grandfathering): un cambio de precio solo afecta a altas nuevas. |
+| IVA | **Precios con IVA incluido** (Stripe: `tax_behavior = inclusive`). |
+| Sesión extra 1 h | 25 € (según la web), pago único → +1 crédito. |
+| Pago anual (nuevo, sale en la web) | −20 % pagando el año en Rookie, All In o MVP. Implica planes con intervalo `month` y `year`. |
+| WhatsApp por defecto | El número publicado en la web (editable en ajustes). |
+| Google de Jaime | Parece cuenta @gmail (es la que aparece en la web) → flujo OAuth del riesgo R4. |
+| Excel real | Más adelante. **Recordatorio: pedirlo antes de empezar la Fase 2 (importador).** |
+
+**Diferencias entre la web y el brief** (la matriz de funciones por plan se ajusta a la web, salvo que digáis lo contrario):
+
+| Función | Rookie | All In | MVP | Peak |
+|---|---|---|---|---|
+| Plan de entreno personalizado | ✔ (gym o running), se actualiza cada 4 semanas | ✔ | ✔ | ✔ 100 % para su evento |
+| Análisis de técnica en vídeo | limitado | ilimitado | ilimitado | ilimitado |
+| Plan nutricional + lista de la compra | — | ✔ | ✔ | ✔ a medida, ajustado cada semana |
+| Revisión / check-in | cada 15 días | semanal | semanal | semanal prioritaria |
+| Videollamada mensual con Jaime | — | 1/mes | 1/mes | 1/mes |
+| Entrenos en directo | — | — | 2/mes (~1 h) | 2/mes (~1 h) |
+| Test inicial y retest cada 4 semanas | — | — | ✔ | ✔ |
+| Resumen de sesión con 3 objetivos guardados | — | — | ✔ | ✔ |
+| Respuesta prioritaria | — | — | ✔ | ✔ |
+| Sesión de arranque 1:1 (45 min) + plan del día del evento | — | — | — | ✔ |
+| Chat in-app | (pendiente de decidir: la web habla de WhatsApp) | | | |
+| Retos, rachas, progreso | ✔ | ✔ | ✔ | ✔ |
+
+Con esto, el tipo de cita "videollamada mensual" se añade a `appointment_types` y los créditos se conceden por tipo (1 de revisión/mes desde All In + 2 de entreno en directo/mes desde MVP).
+
+Squad en el modelo: tabla `squads` (➕) con sus miembros y tamaño. El descuento de cada miembro se recalcula al cambiar el tamaño, con tope en el tramo de 3. El código personal de referido del brief se mantiene como forma de "invitar a mi squad".
 
 > Documento previo a escribir código (punto 16.1 del brief). Contiene: arquitectura, modelo de datos, pantallas, fases, riesgos y dudas.
 > Todo lo marcado **[DECIDIR]** necesita respuesta vuestra; lo marcado **[DEFECTO]** es la opción que tomaré si no decís otra cosa.
@@ -208,6 +248,7 @@ Tablas que **añado** a vuestra lista (marcadas ➕) con su motivo.
 | `discount_redemptions` | discount_id, client_id, subscription_id, status (`reserved/applied/expired/revoked`), reserved_until, applied_at | Contador de plazas fundador = redemptions `applied` + `reserved` vigentes |
 | ➕ `student_verifications` | client_id, card_path, status (`pending/approved/rejected`), reviewed_by, reviewed_at, valid_until | Foto de carnet → aprobación de Jaime |
 | `referrals` | referrer_client_id, referred_client_id, code_used, status (`pending/qualified/rewarded/void`), qualified_at, referrer_redemption_id, referred_redemption_id | |
+| ➕ `squads` / `squad_members` | squad: code, created_by_client_id, plan_ids; members: squad_id, client_id, joined_at, left_at | El tamaño activo decide el tramo (−15 % / −25 %, tope en 3) |
 | `session_credits` | client_id, delta (+/−), reason (`monthly_grant/purchase/manual/consume/refund/expire`), period_start, expires_at, appointment_id, payment_id | Libro de movimientos; el saldo es la suma |
 | ➕ `stripe_events` | id (evt_…), type, payload, processed_at, error | Idempotencia de webhooks |
 | ➕ `leads` | kind (`peak_application/contact`), name, email, phone, message, answers jsonb, status, assigned_to | Solicitudes de Peak |
@@ -481,6 +522,17 @@ Cada fase termina con: qué se ha hecho, cómo probarlo (local + preview), qué 
 ---
 
 ## 7. Dudas que necesito resolver
+
+> v0.2: las preguntas 1–8 y 14 quedan respondidas en el §0. Siguen abiertas las nuevas (A–F) y las 9–13 y 15–17.
+
+**Nuevas tras leer la web:**
+- A. **Cómo se suman squad + estudiante:** ¿se suman los porcentajes (25 % + 10 % = −35 %) o se aplican uno tras otro (−32,5 %)? ¿El −20 % anual también se acumula con ellos?
+- B. **Squad que crece después:** si alguien entra con 1 amigo (−15 %) y más tarde se apunta un tercero, ¿todos pasan a −25 %? Si uno se da de baja, ¿los demás bajan de tramo?
+- C. **"2 amigos":** ¿significa 2 personas en total, o yo + 2 amigos (3 personas)?
+- D. **Primera asesoría gratis:** hoy todos los planes llevan a `/contacto`. ¿El alta con pago (`/empezar`) va directa, o primero se reserva la asesoría gratuita y después Jaime manda el enlace de pago?
+- E. **HYROX:** la web ya tiene un cuestionario de 3 pasos en /hyrox. ¿Lo mantenemos y que envíe los datos a la app (para verlos en el panel), o lo sustituye la página de la app?
+- F. **La web menciona "Sesión presencial en Pamplona"** y el brief dice solo online. ¿La app ignora las presenciales?
+- G. **Chat in-app:** la web promete revisiones por WhatsApp. ¿Queremos chat dentro de la app (y en qué planes) o solo el botón de WhatsApp?
 
 **Bloquean la Fase 1b (pagos):**
 1. **Peak 149 / 179 / 209 "pack"**: ¿son tres niveles mensuales distintos (qué diferencia a cada uno), packs de varios meses, o un precio que Jaime elige por cliente? ¿Se cobra por Stripe con enlace a medida, manual, o ambos?
