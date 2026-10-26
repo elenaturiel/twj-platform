@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,7 @@ export function OnboardingWizard({
   const [guardian, setGuardian] = useState({ name: "", email: "" });
   const [pending, startTransition] = useTransition();
 
-  const birthDate = form.watch("birthDate");
+  const birthDate = useWatch({ control: form.control, name: "birthDate" });
   const minor = typeof birthDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(birthDate) && isMinor(birthDate, today);
   const steps = ["Tu ficha", "Tu salud", ...(minor ? ["Tu tutor/a"] : [])];
   const allAnswered = questionnaire.questions.every((q) => answers[q.key] !== undefined);

@@ -54,14 +54,12 @@ export async function completeOnboarding(input: {
   if (intakeErr) return { ok: false, error: "No hemos podido guardar tu ficha." };
 
   const hasFlags = healthScreeningHasFlags(health.data.answers);
-  const { error: healthErr } = await supabase
-    .from("health_screenings")
-    .insert({
-      client_id: ctx.client.id,
-      version: health.data.version,
-      answers: health.data.answers,
-      has_flags: hasFlags,
-    });
+  const { error: healthErr } = await supabase.from("health_screenings").insert({
+    client_id: ctx.client.id,
+    version: health.data.version,
+    answers: health.data.answers,
+    has_flags: hasFlags,
+  });
   if (healthErr) return { ok: false, error: "No hemos podido guardar el cuestionario." };
 
   const admin = createAdminClient();

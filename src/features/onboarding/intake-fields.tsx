@@ -190,7 +190,7 @@ export function IntakeFields({ form }: { form: Form }) {
             <option value="month">mes</option>
           </select>
         </div>
-        <p className="text-xs text-muted-foreground">El presupuesto de "estudihambre" real. Sin juzgar.</p>
+        <p className="text-xs text-muted-foreground">El presupuesto de «estudihambre» real. Sin juzgar.</p>
       </div>
 
       <div className="space-y-2">
