@@ -24,28 +24,28 @@ pnpm dev               # http://localhost:3000
 
 Usuarios de demo (contraseña `twj-demo-1234`):
 
-| Email | Rol | Qué ver |
-|---|---|---|
-| `jaime@twj.local` | owner | Panel completo |
-| `elena@twj.local` | admin | Panel (todos los permisos) |
-| `cliente1@twj.local` | Lucía · Rookie | Pagado, sin ficha → onboarding |
-| `cliente2@twj.local` | Pablo · All In (manual) | App del cliente |
-| `cliente3@twj.local` | Marta · All In | Pago vencido dentro de la gracia (aviso) |
-| `cliente4@twj.local` | Diego · MVP fundador | Entrenos en directo |
-| `cliente5@twj.local` | Irene · MVP anual (manual) | |
-| `cliente6@twj.local` | Álvaro · Peak | |
+| Email                | Rol                        | Qué ver                                  |
+| -------------------- | -------------------------- | ---------------------------------------- |
+| `jaime@twj.local`    | owner                      | Panel completo                           |
+| `elena@twj.local`    | admin                      | Panel (todos los permisos)               |
+| `cliente1@twj.local` | Lucía · Rookie             | Pagado, sin ficha → onboarding           |
+| `cliente2@twj.local` | Pablo · All In (manual)    | App del cliente                          |
+| `cliente3@twj.local` | Marta · All In             | Pago vencido dentro de la gracia (aviso) |
+| `cliente4@twj.local` | Diego · MVP fundador       | Entrenos en directo                      |
+| `cliente5@twj.local` | Irene · MVP anual (manual) |                                          |
+| `cliente6@twj.local` | Álvaro · Peak              |                                          |
 
 Emails locales (magic link, recuperar contraseña): Mailpit en http://127.0.0.1:54324. Studio de Supabase: http://127.0.0.1:54323.
 
 ## Comandos
 
-| Comando | Qué hace |
-|---|---|
-| `pnpm lint` / `pnpm typecheck` / `pnpm format:check` | Calidad |
-| `pnpm test` | Tests unitarios (lógica de dominio) |
-| `pnpm test:rls` | Tests de RLS con pgTAP (necesita `pnpm db:start`) |
-| `pnpm test:e2e` | Tests E2E con Playwright |
-| `pnpm db:types` | Regenera `src/types/database.ts` tras cambiar migraciones |
+| Comando                                              | Qué hace                                                  |
+| ---------------------------------------------------- | --------------------------------------------------------- |
+| `pnpm lint` / `pnpm typecheck` / `pnpm format:check` | Calidad                                                   |
+| `pnpm test`                                          | Tests unitarios (lógica de dominio)                       |
+| `pnpm test:rls`                                      | Tests de RLS con pgTAP (necesita `pnpm db:start`)         |
+| `pnpm test:e2e`                                      | Tests E2E con Playwright                                  |
+| `pnpm db:types`                                      | Regenera `src/types/database.ts` tras cambiar migraciones |
 
 ## Estructura
 

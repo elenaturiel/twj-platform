@@ -839,14 +839,14 @@ isOneToOne: false
                   ]
                 },"subscriptions": {
                   Row: {
-                    "amount_cents": number,"anchor_day": number | null,"billing_interval": string,"billing_mode": string,"cancel_at_period_end": boolean,"client_id": string,"created_at": string,"current_period_end": string | null,"current_period_start": string | null,"discount_breakdown": NonNullable<Json>,"ended_at": string | null,"grace_until": string | null,"id": string,"list_price_cents": number,"paused_until": string | null,"plan_id": string,"started_at": string | null,"status": string,"stripe_price_id": string | null,"stripe_subscription_id": string | null,"updated_at": string
+                    "amount_cents": number,"anchor_day": number | null,"billing_interval": string,"billing_mode": string,"cancel_at_period_end": boolean,"checkout_session_id": string | null,"client_id": string,"created_at": string,"current_period_end": string | null,"current_period_start": string | null,"discount_breakdown": NonNullable<Json>,"ended_at": string | null,"grace_until": string | null,"id": string,"list_price_cents": number,"paused_until": string | null,"pending_discount_ids": (string)[],"plan_id": string,"started_at": string | null,"status": string,"stripe_price_id": string | null,"stripe_subscription_id": string | null,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "amount_cents": number,"anchor_day"?: number | null,"billing_interval"?: string,"billing_mode": string,"cancel_at_period_end"?: boolean,"client_id": string,"created_at"?: string,"current_period_end"?: string | null,"current_period_start"?: string | null,"discount_breakdown"?: NonNullable<Json>,"ended_at"?: string | null,"grace_until"?: string | null,"id"?: string,"list_price_cents": number,"paused_until"?: string | null,"plan_id": string,"started_at"?: string | null,"status"?: string,"stripe_price_id"?: string | null,"stripe_subscription_id"?: string | null,"updated_at"?: string
+                    "amount_cents": number,"anchor_day"?: number | null,"billing_interval"?: string,"billing_mode": string,"cancel_at_period_end"?: boolean,"checkout_session_id"?: string | null,"client_id": string,"created_at"?: string,"current_period_end"?: string | null,"current_period_start"?: string | null,"discount_breakdown"?: NonNullable<Json>,"ended_at"?: string | null,"grace_until"?: string | null,"id"?: string,"list_price_cents": number,"paused_until"?: string | null,"pending_discount_ids"?: (string)[],"plan_id": string,"started_at"?: string | null,"status"?: string,"stripe_price_id"?: string | null,"stripe_subscription_id"?: string | null,"updated_at"?: string
                   }
                   Update: {
-                    "amount_cents"?: number,"anchor_day"?: number | null,"billing_interval"?: string,"billing_mode"?: string,"cancel_at_period_end"?: boolean,"client_id"?: string,"created_at"?: string,"current_period_end"?: string | null,"current_period_start"?: string | null,"discount_breakdown"?: NonNullable<Json>,"ended_at"?: string | null,"grace_until"?: string | null,"id"?: string,"list_price_cents"?: number,"paused_until"?: string | null,"plan_id"?: string,"started_at"?: string | null,"status"?: string,"stripe_price_id"?: string | null,"stripe_subscription_id"?: string | null,"updated_at"?: string
+                    "amount_cents"?: number,"anchor_day"?: number | null,"billing_interval"?: string,"billing_mode"?: string,"cancel_at_period_end"?: boolean,"checkout_session_id"?: string | null,"client_id"?: string,"created_at"?: string,"current_period_end"?: string | null,"current_period_start"?: string | null,"discount_breakdown"?: NonNullable<Json>,"ended_at"?: string | null,"grace_until"?: string | null,"id"?: string,"list_price_cents"?: number,"paused_until"?: string | null,"pending_discount_ids"?: (string)[],"plan_id"?: string,"started_at"?: string | null,"status"?: string,"stripe_price_id"?: string | null,"stripe_subscription_id"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -938,6 +938,9 @@ isOneToOne: false
 "current_role_name":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
+"expire_discount_reservations":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
 "feature_for_client":
 { Args: { "p_client_id": string,"p_feature": string }; Returns: {
               "enabled": boolean,"limit_value": number
@@ -972,6 +975,9 @@ isOneToOne: false
                            },
 "notify_staff":
 { Args: { "p_body"?: string,"p_client_id"?: string,"p_data"?: Json,"p_link"?: string,"p_title": string,"p_type": string }; Returns: undefined
+                           },
+"reserve_founder_slot":
+{ Args: { "p_client_id": string,"p_minutes"?: number,"p_subscription_id": string }; Returns: string
                            },
 "storage_owner_segment":
 { Args: { "p_name": string }; Returns: string
