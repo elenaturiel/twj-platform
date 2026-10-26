@@ -1,4 +1,4 @@
-# TWJ App — Plan de arquitectura (v0.2, pendiente de OK)
+# TWJ App — Plan de arquitectura (v0.3 — OK para Fase 1 el 26-10-2026)
 
 ## 0. Decisiones tomadas (26-10-2026)
 
@@ -9,12 +9,18 @@ Respuestas de Elena + lo publicado en www.trainwithjaime.es/precios y /servicios
 | Peak | **No se muestran precios en la app.** Pack cerrado de pago único (8, 10 o 12 semanas) para un evento. Flujo: solicitud → Jaime fija el precio en el panel → enlace de pago (Stripe, pago único) o cobro manual. El importe vive solo en el panel/BD, nunca en la UI pública ni en el código. |
 | Precio fundador | MVP a 59,90 € (en vez de 64,90 €) **para siempre** mientras la suscripción siga viva; primeras 6 plazas. **Si se da de baja y vuelve, lo pierde** (la redención queda `revoked` al cancelar y no se puede reutilizar). |
 | Estudiante | −10 % con carné universitario, **verificado manualmente por Jaime** (subida de foto + aprobación). |
-| Squad (según la web) | Alta conjunta, solo **Rookie y All In**: 2 amigos → −15 % cada uno; 3 o más → −25 % cada uno. **Tope en 3 amigos** (el descuento no sigue subiendo). |
-| Acumulación | Squad + estudiante **se acumulan**. |
+| Squad | Solo **Rookie y All In**. Se cuentan *amigos* además de uno mismo: **2 amigos (3 personas) → −15 % cada uno; 3 amigos (4 personas) → −25 % cada uno**; tope en 3 amigos. El tramo se recalcula siempre con los miembros activos: **si alguien entra, todos suben; si alguien se da de baja, todos bajan**. Tramos configurables. |
+| Acumulación | Los descuentos **se suman** (aditivos): p. ej. anual 20 % + squad 25 % + estudiante 10 % = −55 %. El fundador es un precio, no un porcentaje: los porcentajes se aplican sobre él si son compatibles. Tope total configurable (por defecto, sin tope; el panel avisa si una combinación supera el 50 %). |
 | Cambio de precios | Los clientes actuales **mantienen su precio** (grandfathering): un cambio de precio solo afecta a altas nuevas. |
 | IVA | **Precios con IVA incluido** (Stripe: `tax_behavior = inclusive`). |
 | Sesión extra 1 h | 25 € (según la web), pago único → +1 crédito. |
-| Pago anual (nuevo, sale en la web) | −20 % pagando el año en Rookie, All In o MVP. Implica planes con intervalo `month` y `year`. |
+| Pago anual | **Sí**: −20 % pagando el año en Rookie, All In o MVP (intervalos `month` y `year`). Se suma a los demás descuentos. |
+| Alta | La **primera asesoría gratis es por videollamada externa** (fuera de la app). Después, si decide, paga en `/empezar` (Jaime puede mandarle el enlace con el plan preseleccionado: `/empezar?plan=mvp`). |
+| HYROX | Se mantiene el cuestionario actual de la web y **envía los datos al panel** mediante un endpoint público de la app (`POST /api/public/hyrox-waitlist`, CORS solo para www.trainwithjaime.es, con protección anti-spam). |
+| Sesiones presenciales (Pamplona) | **Disponibles a partir de enero de 2027**: `appointment_types` tendrá modalidad `online`/`in_person` con ubicación; las presenciales no crean enlace de Meet. |
+| Videollamadas | **Diferenciador principal**: el entreno en directo por videollamada tiene protagonismo en `/hoy`, en la agenda, en el resumen de sesión (3 objetivos) y como mejora de plan desde Rookie/All In. |
+| Comunicación | **Las revisiones siguen por WhatsApp**; los **cambios (de plan, menú, datos) se hacen en la app**. **Chat in-app solo para dudas puntuales** (por defecto, en todos los planes; configurable en la matriz). |
+| Cuentas externas | Se pedirán cuando hagan falta (no bloquean el desarrollo local). |
 | WhatsApp por defecto | El número publicado en la web (editable en ajustes). |
 | Google de Jaime | Parece cuenta @gmail (es la que aparece en la web) → flujo OAuth del riesgo R4. |
 | Excel real | Más adelante. **Recordatorio: pedirlo antes de empezar la Fase 2 (importador).** |
@@ -33,7 +39,7 @@ Respuestas de Elena + lo publicado en www.trainwithjaime.es/precios y /servicios
 | Resumen de sesión con 3 objetivos guardados | — | — | ✔ | ✔ |
 | Respuesta prioritaria | — | — | ✔ | ✔ |
 | Sesión de arranque 1:1 (45 min) + plan del día del evento | — | — | — | ✔ |
-| Chat in-app | (pendiente de decidir: la web habla de WhatsApp) | | | |
+| Chat in-app (dudas puntuales) | ✔ | ✔ | ✔ | ✔ |
 | Retos, rachas, progreso | ✔ | ✔ | ✔ | ✔ |
 
 Con esto, el tipo de cita "videollamada mensual" se añade a `appointment_types` y los créditos se conceden por tipo (1 de revisión/mes desde All In + 2 de entreno en directo/mes desde MVP).
@@ -523,7 +529,7 @@ Cada fase termina con: qué se ha hecho, cómo probarlo (local + preview), qué 
 
 ## 7. Dudas que necesito resolver
 
-> v0.2: las preguntas 1–8 y 14 quedan respondidas en el §0. Siguen abiertas las nuevas (A–F) y las 9–13 y 15–17.
+> v0.3: las preguntas 1–8, 14 y A–G quedan respondidas en el §0. Siguen abiertas 9–12, 15–17 (con sus valores por defecto del §5).
 
 **Nuevas tras leer la web:**
 - A. **Cómo se suman squad + estudiante:** ¿se suman los porcentajes (25 % + 10 % = −35 %) o se aplican uno tras otro (−32,5 %)? ¿El −20 % anual también se acumula con ellos?
