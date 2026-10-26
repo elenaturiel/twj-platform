@@ -1,0 +1,142 @@
+{
+  "brand": {
+    "name": "Train with Jaime",
+    "short": "TWJ",
+    "tagline": "¿Y tú, quieres ganar?",
+    "loading": "Calentando…"
+  },
+  "common": {
+    "save": "Guardar",
+    "saving": "Guardando…",
+    "cancel": "Cancelar",
+    "continue": "Seguir",
+    "back": "Atrás",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "search": "Buscar",
+    "yes": "Sí",
+    "no": "No",
+    "optional": "Opcional",
+    "required": "Obligatorio",
+    "seeAll": "Ver todo",
+    "logout": "Cerrar sesión",
+    "upgradePlan": "Mejorar plan",
+    "whatsapp": "WhatsApp",
+    "whatsappUrgent": "¿Urgente? WhatsApp",
+    "theme": {
+      "label": "Tema",
+      "system": "Automático",
+      "light": "Claro",
+      "dark": "Oscuro"
+    }
+  },
+  "errors": {
+    "generic": "Algo se ha torcido. No es culpa tuya (casi seguro). Prueba otra vez.",
+    "notFound": "Esto no existe. Como las agujetas del lunes que dijiste que no tendrías.",
+    "forbidden": "Aquí no puedes entrar. Si crees que sí, escribe a Jaime.",
+    "network": "Sin conexión. Lo guardamos y lo mandamos cuando vuelva la red.",
+    "invalidForm": "Revisa los campos marcados."
+  },
+  "auth": {
+    "loginTitle": "Entra en tu cuenta",
+    "loginSubtitle": "Tu plan te está esperando.",
+    "email": "Email",
+    "password": "Contraseña",
+    "login": "Entrar",
+    "loggingIn": "Entrando…",
+    "magicLink": "Enviarme un enlace mágico",
+    "magicLinkSent": "Revisa tu correo: te hemos mandado un enlace para entrar (mira en spam por si acaso).",
+    "google": "Seguir con Google",
+    "or": "o",
+    "forgot": "¿Has olvidado la contraseña?",
+    "resetTitle": "Recupera tu contraseña",
+    "resetSend": "Enviar enlace",
+    "resetSent": "Si el email existe, te llega un enlace en un minuto.",
+    "newPasswordTitle": "Pon una contraseña nueva",
+    "newPassword": "Contraseña nueva",
+    "passwordUpdated": "Contraseña actualizada. A entrenar.",
+    "noAccount": "¿Aún no eres cliente?",
+    "startHere": "Empieza aquí",
+    "invalidCredentials": "Email o contraseña incorrectos.",
+    "passwordMin": "Mínimo 8 caracteres.",
+    "emailInvalid": "Ese email no parece un email."
+  },
+  "nav": {
+    "client": {
+      "today": "Hoy",
+      "training": "Entreno",
+      "food": "Comida",
+      "progress": "Progreso",
+      "more": "Más",
+      "agenda": "Agenda",
+      "chat": "Chat",
+      "challenges": "Retos",
+      "profile": "Perfil",
+      "plan": "Mi plan"
+    },
+    "panel": {
+      "dashboard": "Inicio",
+      "pending": "Pendientes",
+      "clients": "Clientes",
+      "agenda": "Agenda",
+      "messages": "Mensajes",
+      "library": "Biblioteca",
+      "payments": "Pagos",
+      "business": "Negocio",
+      "plans": "Planes y descuentos",
+      "hyrox": "HYROX",
+      "settings": "Ajustes"
+    }
+  },
+  "access": {
+    "pendingPaymentTitle": "Estamos confirmando tu pago",
+    "pendingPaymentBody": "En cuanto el banco diga que sí, entras. Suele tardar segundos.",
+    "pastDueTitle": "Tu cuota está pendiente",
+    "pastDueBody": "Tienes acceso hasta el {date}. Actualiza el pago para no perder el ritmo.",
+    "blockedTitle": "Acceso en pausa",
+    "blockedBody": "Tu cuota está pendiente. En cuanto se regularice, vuelves a tenerlo todo.",
+    "cancelledTitle": "Tu plan está cancelado",
+    "cancelledBody": "Tu historial sigue aquí. Cuando quieras volver, te esperamos.",
+    "guardianPendingTitle": "Falta la autorización de tu tutor/a",
+    "guardianPendingBody": "Le hemos mandado un email a {email}. En cuanto lo autorice, entras.",
+    "lockedFeature": "Esto va en el plan {plan}.",
+    "lockedFeatureCta": "Ver plan {plan}"
+  },
+  "empty": {
+    "workouts": "Aún no hay entrenos. Los abdominales no se hacen solos.",
+    "notifications": "Nada nuevo. Disfruta del silencio.",
+    "clients": "Todavía no hay clientes. El primero siempre cuesta.",
+    "payments": "Sin pagos registrados.",
+    "changes": "Sin cambios recientes."
+  },
+  "toasts": {
+    "saved": "Guardado. Hoy ganas.",
+    "workoutSaved": "Entreno guardado. Hoy ganas."
+  },
+  "client": {
+    "today": {
+      "greeting": "Hola, {name}",
+      "todayWorkout": "Hoy toca",
+      "noWorkout": "Hoy descansas. También cuenta.",
+      "nextLiveSession": "Tu próximo entreno en directo",
+      "noLiveSession": "Sin entrenos en directo reservados.",
+      "bookLiveSession": "Reservar con Jaime",
+      "liveSessionPitch": "Entrena con Jaime por videollamada: técnica, cargas y ritmo corregidos en directo.",
+      "checkinDue": "Tienes el check-in pendiente",
+      "comingSoon": "Llega pronto"
+    }
+  },
+  "panel": {
+    "dashboard": {
+      "title": "Hola, {name}",
+      "activeClients": "Clientes activos",
+      "newThisMonth": "Altas del mes",
+      "churnThisMonth": "Bajas del mes",
+      "revenueThisMonth": "Ingresos del mes",
+      "pendingPayments": "Pagos pendientes o vencidos",
+      "upcomingRenewals": "Renovaciones en 7 días",
+      "recentChanges": "Cambios recientes en fichas",
+      "inactiveClients": "Sin actividad en 7+ días"
+    }
+  }
+}
