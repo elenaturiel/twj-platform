@@ -172,18 +172,16 @@ export async function grantPeriodCredits(clientId: string, periodStart: string) 
     const { data } = await admin.rpc("feature_for_client", { p_client_id: clientId, p_feature: g.feature });
     const f = data?.[0];
     if (!f?.enabled || !f.limit_value) continue;
-    await admin
-      .from("session_credits")
-      .upsert(
-        {
-          client_id: clientId,
-          credit_type: g.type,
-          delta: f.limit_value,
-          reason: "monthly_grant",
-          period_start: periodStart,
-        },
-        { onConflict: "client_id,credit_type,period_start", ignoreDuplicates: true },
-      );
+    await admin.from("session_credits").upsert(
+      {
+        client_id: clientId,
+        credit_type: g.type,
+        delta: f.limit_value,
+        reason: "monthly_grant",
+        period_start: periodStart,
+      },
+      { onConflict: "client_id,credit_type,period_start", ignoreDuplicates: true },
+    );
   }
 }
 

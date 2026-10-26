@@ -188,17 +188,15 @@ export async function startSignup(_: SignupState, formData: FormData): Promise<S
       if (input.squadMode === "join") {
         const { data: squad } = await admin.from("squads").select("owner_client_id, code").eq("id", squadId).single();
         if (squad?.owner_client_id && squad.owner_client_id !== client.id) {
-          await admin
-            .from("referrals")
-            .upsert(
-              {
-                referrer_client_id: squad.owner_client_id,
-                referred_client_id: client.id,
-                code_used: squad.code,
-                squad_id: squadId,
-              },
-              { onConflict: "referred_client_id", ignoreDuplicates: true },
-            );
+          await admin.from("referrals").upsert(
+            {
+              referrer_client_id: squad.owner_client_id,
+              referred_client_id: client.id,
+              code_used: squad.code,
+              squad_id: squadId,
+            },
+            { onConflict: "referred_client_id", ignoreDuplicates: true },
+          );
         }
       }
     }
