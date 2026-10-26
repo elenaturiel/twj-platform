@@ -1,0 +1,62 @@
+name: Supabase (staging)
+
+# Aplica las migraciones al proyecto de Supabase de pruebas y, fuera de main,
+# carga los usuarios de demo (solo la primera vez). Las claves viven en
+# GitHub → Settings → Secrets and variables → Actions, nunca en el código.
+#   SUPABASE_ACCESS_TOKEN   token personal de supabase.com/dashboard/account/tokens
+#   SUPABASE_DB_PASSWORD    contraseña de la base de datos del proyecto
+#   SUPABASE_PROJECT_REF    id del proyecto (la parte xxxx de https://xxxx.supabase.co)
+#   SUPABASE_SECRET_KEY     clave secreta (Project Settings → API Keys), para las semillas
+
+on:
+  push:
+    branches: [main, fase-1]
+    paths: ["supabase/**", ".github/workflows/supabase-deploy.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: supabase-staging
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - name: ¿Están configurados los secretos?
+        id: check
+        run: |
+          if [ -n "$SUPABASE_ACCESS_TOKEN" ] && [ -n "$SUPABASE_DB_PASSWORD" ] && [ -n "$PROJECT_REF" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Faltan secretos de Supabase; no se despliega nada."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.check.outputs.ready == 'true'
+      - uses: supabase/setup-cli@v1
+        if: steps.check.outputs.ready == 'true'
+        with:
+          version: 2.122.0
+      - name: Migraciones
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+          supabase db push --password "$SUPABASE_DB_PASSWORD"
+      - uses: pnpm/action-setup@v4
+        if: steps.check.outputs.ready == 'true' && github.ref != 'refs/heads/main' && env.SUPABASE_SECRET_KEY != ''
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.ready == 'true' && github.ref != 'refs/heads/main' && env.SUPABASE_SECRET_KEY != ''
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Usuarios de demo (solo staging, solo la primera vez)
+        if: steps.check.outputs.ready == 'true' && github.ref != 'refs/heads/main' && env.SUPABASE_SECRET_KEY != ''
+        run: |
+          pnpm install --frozen-lockfile
+          printf 'NEXT_PUBLIC_SUPABASE_URL=https://%s.supabase.co\nSUPABASE_SECRET_KEY=%s\n' "$PROJECT_REF" "$SUPABASE_SECRET_KEY" > .env.local
+          pnpm db:seed --force

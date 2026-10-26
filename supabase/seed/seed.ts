@@ -201,6 +201,12 @@ const clients: SeedClient[] = [
 ];
 
 async function main() {
+  // Idempotente: si los usuarios de demo ya existen, no hace nada
+  const { data: existing } = await db.from("profiles").select("id").eq("email", "jaime@twj.local").maybeSingle();
+  if (existing) {
+    console.log("Semillas ya cargadas: no se hace nada.");
+    return;
+  }
   console.log("→ Staff");
   const jaime = await createUser("jaime@twj.local", "Jaime");
   const elena = await createUser("elena@twj.local", "Elena");
