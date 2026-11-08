@@ -55,6 +55,16 @@ export default async function ProfilePage() {
         </span>
         <ChevronRight className="size-4" aria-hidden />
       </Link>
+      <Link
+        href="/perfil/notificaciones"
+        className="flex items-center justify-between rounded-xl border px-4 py-3 hover:bg-muted/50"
+      >
+        <span>
+          <span className="font-medium">Avisos</span>
+          <span className="block text-xs text-muted-foreground">Push en el móvil y qué emails recibes</span>
+        </span>
+        <ChevronRight className="size-4" aria-hidden />
+      </Link>
       <ProfileForm defaults={defaults} />
       <OwnCustomFields
         fields={(cf ?? []).map((v) => ({

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell } from "lucide-react";
+import { Bell, MessageSquare } from "lucide-react";
 import { requireStaff } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { Logo } from "@/components/twj/logo";
@@ -15,6 +15,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
     .select("id", { count: "exact", head: true })
     .eq("profile_id", viewer.id)
     .is("read_at", null);
+  const { data: chatUnread } = await supabase.rpc("chat_unread_count");
 
   return (
     <div className="flex min-h-dvh">
@@ -41,6 +42,18 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
             <Logo compact className="text-2xl" />
           </Link>
           <div className="ml-auto flex items-center gap-1">
+            <Link
+              href="/panel/chat"
+              className="relative rounded-md p-2 hover:bg-muted"
+              aria-label={`Mensajes (${chatUnread ?? 0} sin leer)`}
+            >
+              <MessageSquare className="size-5" aria-hidden />
+              {chatUnread ? (
+                <span className="absolute top-0.5 right-0.5 min-w-4 rounded-full bg-destructive px-1 text-center text-[10px] leading-4 font-bold text-white">
+                  {chatUnread > 99 ? "99+" : chatUnread}
+                </span>
+              ) : null}
+            </Link>
             <Link
               href="/panel/avisos"
               className="relative rounded-md p-2 hover:bg-muted"

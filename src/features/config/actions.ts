@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireScope, requireStaff } from "@/lib/auth/dal";
+import { requireScope, requireStaff, requireViewer } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 
 export type ConfigResult = { ok: true } | { ok: false; error: string };
@@ -186,7 +186,8 @@ export async function setDigestPreference(digest: boolean): Promise<ConfigResult
 }
 
 export async function markNotificationsRead(ids?: string[]): Promise<ConfigResult> {
-  const viewer = await requireStaff();
+  // Cualquier usuario (cliente o staff): RLS limita a sus propios avisos
+  const viewer = await requireViewer();
   const supabase = await createClient();
   let q = supabase
     .from("notifications")
@@ -195,6 +196,27 @@ export async function markNotificationsRead(ids?: string[]): Promise<ConfigResul
     .is("read_at", null);
   if (ids?.length) q = q.in("id", ids);
   await q;
-  revalidatePath("/panel", "layout");
+  revalidatePath(viewer.role === "client" ? "/" : "/panel", "layout");
+  return { ok: true };
+}
+
+const templateSchema = z.object({
+  key: z.string().min(2).max(60),
+  subject: z.string().trim().max(200),
+  body: z.string().trim().min(10).max(8000),
+});
+
+/** Edita el texto de una plantilla de email (las variables {{x}} se respetan). */
+export async function updateTemplate(input: z.infer<typeof templateSchema>): Promise<ConfigResult> {
+  const viewer = await requireScope("settings");
+  const p = templateSchema.safeParse(input);
+  if (!p.success) return { ok: false, error: "Revisa el asunto y el texto." };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("message_templates")
+    .update({ subject: p.data.subject || null, body: p.data.body, updated_by: viewer.id })
+    .eq("key", p.data.key);
+  if (error) return { ok: false, error: "No se ha podido guardar." };
+  revalidatePath("/panel/ajustes/plantillas");
   return { ok: true };
 }

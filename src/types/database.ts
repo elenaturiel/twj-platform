@@ -397,6 +397,58 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"conversation_reads": {
+                  Row: {
+                    "conversation_id": string,"last_read_at": string,"profile_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "conversation_id": string,"last_read_at"?: string,"profile_id": string
+                  }
+                  Update: {
+                    "conversation_id"?: string,"last_read_at"?: string,"profile_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "conversation_reads_conversation_id_fkey"
+      columns: ["conversation_id"]
+isOneToOne: false
+      referencedRelation: "conversations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "conversation_reads_profile_id_fkey"
+      columns: ["profile_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"conversations": {
+                  Row: {
+                    "client_id": string,"created_at": string,"id": string,"last_message_at": string | null,"last_message_preview": string | null,"last_sender_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id": string,"created_at"?: string,"id"?: string,"last_message_at"?: string | null,"last_message_preview"?: string | null,"last_sender_id"?: string | null
+                  }
+                  Update: {
+                    "client_id"?: string,"created_at"?: string,"id"?: string,"last_message_at"?: string | null,"last_message_preview"?: string | null,"last_sender_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "conversations_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: true
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "conversations_last_sender_id_fkey"
+      columns: ["last_sender_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"custom_field_values": {
                   Row: {
                     "client_id": string,"field_id": string,"updated_at": string,"value": Json | null
@@ -964,6 +1016,38 @@ isOneToOne: false
                     {
       foreignKeyName: "message_templates_updated_by_fkey"
       columns: ["updated_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"messages": {
+                  Row: {
+                    "attachment_path": string | null,"attachment_type": string | null,"body": string | null,"client_id": string,"conversation_id": string,"created_at": string,"deleted_at": string | null,"id": string,"sender_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "attachment_path"?: string | null,"attachment_type"?: string | null,"body"?: string | null,"client_id": string,"conversation_id": string,"created_at"?: string,"deleted_at"?: string | null,"id"?: string,"sender_id": string
+                  }
+                  Update: {
+                    "attachment_path"?: string | null,"attachment_type"?: string | null,"body"?: string | null,"client_id"?: string,"conversation_id"?: string,"created_at"?: string,"deleted_at"?: string | null,"id"?: string,"sender_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "messages_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "messages_conversation_id_fkey"
+      columns: ["conversation_id"]
+isOneToOne: false
+      referencedRelation: "conversations"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "messages_sender_id_fkey"
+      columns: ["sender_id"]
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
@@ -1924,6 +2008,9 @@ isOneToOne: false
 "cancel_appointment":
 { Args: { "p_id": string,"p_reason"?: string }; Returns: boolean
                            },
+"chat_unread_count":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
 "client_credit_balance":
 { Args: { "p_client_id": string,"p_type": string }; Returns: number
                            },
@@ -1953,6 +2040,9 @@ isOneToOne: false
 "founder_slots_left":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
+"get_or_create_conversation":
+{ Args: { "p_client_id": string }; Returns: string
+                           },
 "google_disconnect":
 { Args: { "p_profile": string }; Returns: undefined
                            },
@@ -1976,6 +2066,9 @@ isOneToOne: false
                            },
 "log_access":
 { Args: { "p_client_id": string,"p_entity": string,"p_entity_id": string,"p_metadata"?: Json }; Returns: undefined
+                           },
+"mark_conversation_read":
+{ Args: { "p_conversation": string }; Returns: undefined
                            },
 "my_client_id":
 { Args: Record<PropertyKey, never>; Returns: string

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { requireStaff } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +41,14 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent>
           <DigestToggle digest={pref?.digest ?? false} />
+          <div className="mt-3 flex flex-wrap gap-3 text-sm">
+            <Link href="/panel/ajustes/notificaciones" className="underline">
+              Avisos por tipo y push en este dispositivo
+            </Link>
+            <Link href="/panel/ajustes/plantillas" className="underline">
+              Plantillas de email
+            </Link>
+          </div>
         </CardContent>
       </Card>
       <Card>
@@ -62,7 +71,7 @@ export default async function SettingsPage() {
         </CardContent>
       </Card>
       <p className="text-sm text-muted-foreground">
-        Marca (colores, logo), plantillas de email, disponibilidad y textos legales: en sus fases (ver docs/PLAN.md).
+        Disponibilidad y Google Calendar: en Agenda → Disponibilidad. Textos legales y permisos del equipo: en Negocio.
       </p>
     </div>
   );

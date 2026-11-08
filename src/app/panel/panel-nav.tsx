@@ -11,6 +11,7 @@ import {
   Settings,
   Tags,
   Users,
+  MessageSquare,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { BottomNav, SideNav, type NavItem } from "@/components/twj/nav";
@@ -21,6 +22,7 @@ function useItems(): NavItem[] {
     { href: "/panel", label: t("dashboard"), icon: Home, exact: true },
     { href: "/panel/clientes", label: t("clients"), icon: Users },
     { href: "/panel/pendientes", label: t("pending"), icon: Inbox },
+    { href: "/panel/chat", label: t("chat"), icon: MessageSquare },
     { href: "/panel/agenda", label: t("agenda"), icon: CalendarDays },
     { href: "/panel/biblioteca", label: t("library"), icon: BookOpen },
     { href: "/panel/seguimiento", label: t("tracking"), icon: Activity },
@@ -38,6 +40,7 @@ export function PanelSideNav() {
 export function PanelBottomNav() {
   const items = useItems();
   // En móvil, las 5 más usadas
-  const mobile = [items[0], items[1], items[2], items[3], items[4]].filter(Boolean) as NavItem[];
+  // (Mensajes ya está en la cabecera)
+  const mobile = [items[0], items[1], items[2], items[4], items[5]].filter(Boolean) as NavItem[];
   return <BottomNav items={mobile} className="lg:hidden" />;
 }

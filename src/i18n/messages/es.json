@@ -72,7 +72,8 @@
       "chat": "Chat",
       "challenges": "Retos",
       "profile": "Perfil",
-      "plan": "Mi plan"
+      "plan": "Mi plan",
+      "notifications": "Avisos"
     },
     "panel": {
       "dashboard": "Inicio",
@@ -86,7 +87,8 @@
       "plans": "Planes y descuentos",
       "hyrox": "HYROX",
       "settings": "Ajustes",
-      "tracking": "Seguimiento"
+      "tracking": "Seguimiento",
+      "chat": "Mensajes"
     }
   },
   "access": {

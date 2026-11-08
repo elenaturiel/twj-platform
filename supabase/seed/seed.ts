@@ -210,6 +210,7 @@ async function main() {
   await seedTracking();
   await seedNutrition();
   await seedAgenda();
+  await seedChat();
   console.log(`\nListo. Contraseña de todos los usuarios: ${PASSWORD}`);
 }
 
@@ -1199,6 +1200,51 @@ async function seedAgenda() {
     });
     if (e2) throw new Error(`cita futura: ${e2.message}`);
     console.log(`  ✓ citas de ${c.profiles?.full_name}`);
+  }
+}
+
+async function seedChat() {
+  const { count } = await db.from("messages").select("id", { count: "exact", head: true });
+  if (count) return console.log("Fase 6 ya cargada.");
+  console.log("→ Chat");
+  const { data: jaime } = await db.from("profiles").select("id").eq("email", "jaime@twj.local").single();
+  const { data: clients } = await db
+    .from("clients")
+    .select("id, profile_id, profiles(full_name, email)")
+    .eq("status", "active")
+    .not("onboarding_completed_at", "is", null);
+  const demo = (clients ?? []).filter((c) => c.profiles?.email?.endsWith("@twj.local")).slice(0, 3);
+  const scripts = [
+    [
+      "¿Puedo cambiar el entreno del jueves al viernes? Tengo examen. (demo)",
+      "Claro, muévelo sin problema. Mantén el descanso del sábado. (demo)",
+    ],
+    [
+      "Me molesta un poco la rodilla en la sentadilla búlgara (demo)",
+      "Bájale el rango y grábate una serie, que la miro. (demo)",
+      "Vale, luego te lo mando (demo)",
+    ],
+    ["¿Qué desayuno si entreno a las 7? (demo)"],
+  ];
+  for (const [i, c] of demo.entries()) {
+    const conv = await must(db.from("conversations").insert({ client_id: c.id }).select("id").single(), "conversación");
+    const lines = scripts[i] ?? [];
+    for (const [k, body] of lines.entries()) {
+      await must(
+        db
+          .from("messages")
+          .insert({
+            conversation_id: conv.id,
+            client_id: c.id,
+            sender_id: k % 2 === 0 ? c.profile_id : jaime!.id,
+            body,
+            created_at: new Date(Date.now() - (lines.length - k) * 3_600_000).toISOString(),
+          })
+          .select("id"),
+        "mensaje",
+      );
+    }
+    console.log(`  ✓ chat de ${c.profiles?.full_name}`);
   }
 }
 
