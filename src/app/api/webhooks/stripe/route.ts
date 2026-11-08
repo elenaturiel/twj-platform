@@ -5,6 +5,7 @@ import { getStripe } from "@/lib/payments/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { applySubscriptionPayment, cancelSubscription, markPastDue } from "@/features/billing/fulfillment";
 import { attachRecurringDiscounts } from "@/features/billing/stripe-sync";
+import { fulfillExtraSession } from "@/features/agenda/extra.server";
 import type { QuoteLine } from "@/domain/billing/types";
 
 export const runtime = "nodejs";
@@ -55,6 +56,19 @@ async function handle(event: Stripe.Event, request: NextRequest) {
           .from("subscriptions")
           .update({ stripe_subscription_id: session.subscription })
           .eq("id", session.metadata.subscription_id);
+      }
+      // Sesión extra (pago único)
+      if (
+        session.mode === "payment" &&
+        session.metadata?.kind === "extra_session" &&
+        session.payment_status === "paid"
+      ) {
+        await fulfillExtraSession({
+          clientId: session.metadata.client_id!,
+          amountCents: session.amount_total ?? 0,
+          reference: session.id,
+          paymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : null,
+        });
       }
       return;
     }

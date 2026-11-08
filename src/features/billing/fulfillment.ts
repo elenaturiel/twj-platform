@@ -2,6 +2,7 @@ import "server-only";
 import { billingPeriod } from "@/domain/billing/renewal";
 import type { BillingInterval } from "@/domain/billing/types";
 import { todayInMadrid } from "@/lib/dates";
+import { creditWindow, madridInstant } from "@/domain/agenda/slots";
 import { formatEuros } from "@/lib/money";
 import { sendTemplateEmail } from "@/lib/email/send";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -161,9 +162,14 @@ export async function applySubscriptionPayment(input: PaymentInput, siteUrl: str
   return { paymentId: payment.id, isFirst, period };
 }
 
-/** Concede los créditos del periodo según el plan (entrenos en directo, videollamada mensual). */
-export async function grantPeriodCredits(clientId: string, periodStart: string) {
+/**
+ * Concede los créditos del mes (entrenos en directo, videollamada mensual) según el plan.
+ * No se acumulan: caducan al acabar la ventana mensual. En cuotas anuales se conceden
+ * cada mes (el cron de agenda llama aquí a diario; el índice único evita duplicados).
+ */
+export async function grantPeriodCredits(clientId: string, periodStart: string, today = todayInMadrid()) {
   const admin = createAdminClient();
+  const win = creditWindow(periodStart, today);
   const grants: { type: "live_training" | "monthly_call"; feature: string }[] = [
     { type: "live_training", feature: "live_sessions" },
     { type: "monthly_call", feature: "monthly_call" },
@@ -178,7 +184,8 @@ export async function grantPeriodCredits(clientId: string, periodStart: string) 
         credit_type: g.type,
         delta: f.limit_value,
         reason: "monthly_grant",
-        period_start: periodStart,
+        period_start: win.start,
+        expires_at: madridInstant(win.end, "00:00").toISOString(),
       },
       { onConflict: "client_id,credit_type,period_start", ignoreDuplicates: true },
     );

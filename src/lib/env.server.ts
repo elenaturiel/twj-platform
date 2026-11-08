@@ -14,6 +14,9 @@ const serverSchema = z.object({
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),
   VAPID_SUBJECT: z.string().optional(),
+  // Google Calendar + Meet (cuenta de Jaime). Sin ellas, la agenda funciona sin Meet automático.
+  GOOGLE_CLIENT_ID: z.string().trim().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().trim().optional(),
 });
 
 let cached: z.infer<typeof serverSchema> | undefined;

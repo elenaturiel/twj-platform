@@ -209,6 +209,7 @@ async function main() {
   await seedTraining();
   await seedTracking();
   await seedNutrition();
+  await seedAgenda();
   console.log(`\nListo. Contraseña de todos los usuarios: ${PASSWORD}`);
 }
 
@@ -382,6 +383,7 @@ async function seedPhase1() {
               delta: 2,
               reason: "monthly_grant",
               period_start: iso(periodStart),
+              expires_at: addMonths(periodStart, 1).toISOString(),
             },
             {
               client_id: clientId,
@@ -389,6 +391,7 @@ async function seedPhase1() {
               delta: 1,
               reason: "monthly_grant",
               period_start: iso(periodStart),
+              expires_at: addMonths(periodStart, 1).toISOString(),
             },
           ])
           .select(),
@@ -1150,6 +1153,52 @@ async function seedNutrition() {
         body: "Bebe 2 L de agua hoy y prioriza la proteína en la cena. (demo)",
       });
     console.log(`  ✓ menú de ${c.profiles?.full_name}`);
+  }
+}
+
+async function seedAgenda() {
+  const { count } = await db.from("appointments").select("id", { count: "exact", head: true });
+  if (count) return console.log("Fase 5 ya cargada.");
+  console.log("→ Agenda");
+  const { data: clients } = await db
+    .from("clients")
+    .select("id, profiles(full_name, email), plans(key)")
+    .eq("status", "active")
+    .not("onboarding_completed_at", "is", null);
+  const demo = (clients ?? []).filter(
+    (c) => c.profiles?.email?.endsWith("@twj.local") && ["mvp", "peak"].includes(c.plans?.key ?? ""),
+  );
+  const nextMonday = addDays(lastMonday(new Date()), 7);
+  const prevWednesday = addDays(lastMonday(new Date()), -5);
+  // Hora de Madrid ≈ UTC+1 en invierno (datos de demo)
+  const at = (d: Date, h: number) =>
+    new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), h - 1)).toISOString();
+  for (const [i, c] of demo.entries()) {
+    const { data: past, error: e1 } = await db.rpc("book_appointment", {
+      p_type: "live_training",
+      p_starts_at: at(prevWednesday, 18 + i * 2),
+      p_client_id: c.id,
+      p_use_credit: false,
+    });
+    if (e1) throw new Error(`cita pasada: ${e1.message}`);
+    await db
+      .from("appointments")
+      .update({
+        status: "completed",
+        summary: "Técnica de sentadilla: mejor profundidad. Ritmo de carrera estable en las series. (demo)",
+        goals: ["Sentadilla 3×8 a 70 kg con pausa", "Rodaje suave Z2 de 40 min", "Dormir 7 h mínimo"],
+      })
+      .eq("id", past as string);
+    const { data: balance } = await db.rpc("client_credit_balance", { p_client_id: c.id, p_type: "live_training" });
+    const { error: e2 } = await db.rpc("book_appointment", {
+      p_use_credit: Number(balance) > 0,
+      p_type: "live_training",
+      p_starts_at: at(nextMonday, 18 + i),
+      p_client_id: c.id,
+      p_notes: "Quiero repasar el wall ball (demo)",
+    });
+    if (e2) throw new Error(`cita futura: ${e2.message}`);
+    console.log(`  ✓ citas de ${c.profiles?.full_name}`);
   }
 }
 

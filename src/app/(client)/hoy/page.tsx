@@ -5,6 +5,8 @@ import { getTranslations } from "next-intl/server";
 import { requireClientWithAccess } from "@/lib/auth/dal";
 import { todayInMadrid } from "@/lib/dates";
 import { getTrainingOverview } from "@/features/training/queries";
+import { getCreditBalances, getNextAppointment } from "@/features/agenda/queries";
+import { formatSlot } from "@/domain/agenda/slots";
 import { MODALITY_LABELS } from "@/domain/training/prescription";
 import { getPublicSettings } from "@/lib/settings";
 import { createClient } from "@/lib/supabase/server";
@@ -27,6 +29,10 @@ export default async function TodayPage() {
     p_feature: "live_sessions",
   });
   const firstName = ctx.viewer.fullName.split(" ")[0] || "crack";
+  const [next, credits] = await Promise.all([getNextAppointment(ctx.client.id), getCreditBalances(ctx.client.id)]);
+  const liveCredits = credits.live_training + credits.extra;
+  // eslint-disable-next-line react-hooks/purity -- hora de la petición (servidor)
+  const soon = next ? new Date(next.starts_at).getTime() - Date.now() < 15 * 60_000 : false;
   const [{ todaySession, done }, { data: pendingCheckin }] = await Promise.all([
     getTrainingOverview(ctx.client.id, todayInMadrid()),
     supabase
@@ -66,16 +72,31 @@ export default async function TodayPage() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Video className="size-5" aria-hidden />
-            <CardTitle className="text-lg">{t("nextLiveSession")}</CardTitle>
+            <CardTitle className="text-lg">{next ? next.appointment_types?.name : t("nextLiveSession")}</CardTitle>
           </div>
-          <CardDescription className="text-primary-foreground/80">
-            {hasLive ? t("noLiveSession") : t("liveSessionPitch")}
+          <CardDescription className="text-primary-foreground/80 first-letter:uppercase">
+            {next ? formatSlot(next.starts_at) : hasLive ? t("noLiveSession") : t("liveSessionPitch")}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          {hasLive ? (
-            <Button variant="secondary" size="sm" disabled>
-              {t("bookLiveSession")} · {t("comingSoon")}
+        <CardContent className="flex flex-wrap gap-2">
+          {next ? (
+            next.meet_url && next.modality === "online" ? (
+              <Button asChild variant="secondary" size="sm">
+                <a href={next.meet_url} target="_blank" rel="noopener noreferrer">
+                  {soon ? "Entrar ahora" : "Enlace de la videollamada"}
+                </a>
+              </Button>
+            ) : (
+              <Button asChild variant="secondary" size="sm">
+                <Link href="/agenda">Ver en la agenda</Link>
+              </Button>
+            )
+          ) : hasLive ? (
+            <Button asChild variant="secondary" size="sm">
+              <Link href="/agenda/reservar?tipo=live_training">
+                {t("bookLiveSession")}
+                {liveCredits ? ` · te quedan ${liveCredits}` : ""}
+              </Link>
             </Button>
           ) : (
             <Button asChild variant="secondary" size="sm">

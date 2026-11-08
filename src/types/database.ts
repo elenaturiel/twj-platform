@@ -63,6 +63,64 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"appointment_types": {
+                  Row: {
+                    "available_from": string | null,"bookable_by_client": boolean,"buffer_min": number,"cancel_notice_h": number,"created_at": string,"credit_types": (string)[],"description": string | null,"duration_min": number,"feature_key": string | null,"is_active": boolean,"key": string,"location": string | null,"min_notice_h": number,"modality": string,"name": string,"sort_order": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "available_from"?: string | null,"bookable_by_client"?: boolean,"buffer_min"?: number,"cancel_notice_h"?: number,"created_at"?: string,"credit_types"?: (string)[],"description"?: string | null,"duration_min": number,"feature_key"?: string | null,"is_active"?: boolean,"key": string,"location"?: string | null,"min_notice_h"?: number,"modality"?: string,"name": string,"sort_order"?: number
+                  }
+                  Update: {
+                    "available_from"?: string | null,"bookable_by_client"?: boolean,"buffer_min"?: number,"cancel_notice_h"?: number,"created_at"?: string,"credit_types"?: (string)[],"description"?: string | null,"duration_min"?: number,"feature_key"?: string | null,"is_active"?: boolean,"key"?: string,"location"?: string | null,"min_notice_h"?: number,"modality"?: string,"name"?: string,"sort_order"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "appointment_types_feature_key_fkey"
+      columns: ["feature_key"]
+isOneToOne: false
+      referencedRelation: "features"
+      referencedColumns: ["key"]
+    }
+                  ]
+                },"appointments": {
+                  Row: {
+                    "cancel_reason": string | null,"cancelled_at": string | null,"cancelled_by": string | null,"client_id": string,"client_notes": string | null,"created_at": string,"created_by": string | null,"credit_type": string | null,"ends_at": string,"goals": (string)[],"google_event_id": string | null,"id": string,"late_cancel": boolean,"location": string | null,"meet_url": string | null,"modality": string,"reminder_1h_at": string | null,"reminder_24h_at": string | null,"staff_notes": string | null,"starts_at": string,"status": string,"summary": string | null,"type_key": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"client_id": string,"client_notes"?: string | null,"created_at"?: string,"created_by"?: string | null,"credit_type"?: string | null,"ends_at": string,"goals"?: (string)[],"google_event_id"?: string | null,"id"?: string,"late_cancel"?: boolean,"location"?: string | null,"meet_url"?: string | null,"modality"?: string,"reminder_1h_at"?: string | null,"reminder_24h_at"?: string | null,"staff_notes"?: string | null,"starts_at": string,"status"?: string,"summary"?: string | null,"type_key": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "cancel_reason"?: string | null,"cancelled_at"?: string | null,"cancelled_by"?: string | null,"client_id"?: string,"client_notes"?: string | null,"created_at"?: string,"created_by"?: string | null,"credit_type"?: string | null,"ends_at"?: string,"goals"?: (string)[],"google_event_id"?: string | null,"id"?: string,"late_cancel"?: boolean,"location"?: string | null,"meet_url"?: string | null,"modality"?: string,"reminder_1h_at"?: string | null,"reminder_24h_at"?: string | null,"staff_notes"?: string | null,"starts_at"?: string,"status"?: string,"summary"?: string | null,"type_key"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "appointments_cancelled_by_fkey"
+      columns: ["cancelled_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "appointments_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "appointments_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "appointments_type_key_fkey"
+      columns: ["type_key"]
+isOneToOne: false
+      referencedRelation: "appointment_types"
+      referencedColumns: ["key"]
+    }
+                  ]
                 },"audit_log": {
                   Row: {
                     "action": string,"actor_id": string | null,"client_id": string | null,"created_at": string,"entity": string,"entity_id": string | null,"id": number,"ip": unknown,"metadata": NonNullable<Json>
@@ -76,6 +134,40 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"availability": {
+                  Row: {
+                    "created_at": string,"end_time": string,"id": string,"is_active": boolean,"start_time": string,"type_keys": (string)[],"weekday": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"end_time": string,"id"?: string,"is_active"?: boolean,"start_time": string,"type_keys"?: (string)[],"weekday": number
+                  }
+                  Update: {
+                    "created_at"?: string,"end_time"?: string,"id"?: string,"is_active"?: boolean,"start_time"?: string,"type_keys"?: (string)[],"weekday"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"availability_exceptions": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"ends_at": string,"id": string,"kind": string,"reason": string | null,"starts_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"ends_at": string,"id"?: string,"kind"?: string,"reason"?: string | null,"starts_at": string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"ends_at"?: string,"id"?: string,"kind"?: string,"reason"?: string | null,"starts_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "availability_exceptions_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"checkin_answers": {
                   Row: {
@@ -519,6 +611,26 @@ isOneToOne: false
       foreignKeyName: "foods_verified_by_fkey"
       columns: ["verified_by"]
 isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"google_connections": {
+                  Row: {
+                    "calendar_id": string,"connected_at": string,"google_email": string | null,"profile_id": string,"vault_secret_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "calendar_id"?: string,"connected_at"?: string,"google_email"?: string | null,"profile_id": string,"vault_secret_id"?: string | null
+                  }
+                  Update: {
+                    "calendar_id"?: string,"connected_at"?: string,"google_email"?: string | null,"profile_id"?: string,"vault_secret_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "google_connections_profile_id_fkey"
+      columns: ["profile_id"]
+isOneToOne: true
       referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
@@ -1274,6 +1386,12 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "session_credits_appointment_fk"
+      columns: ["appointment_id"]
+isOneToOne: false
+      referencedRelation: "appointments"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "session_credits_client_id_fkey"
       columns: ["client_id"]
 isOneToOne: false
@@ -1795,7 +1913,18 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "client_credit_balance":
+            "book_appointment":
+{ Args: { "p_client_id"?: string,"p_notes"?: string,"p_starts_at": string,"p_type": string,"p_use_credit"?: boolean }; Returns: string
+                           },
+"busy_ranges":
+{ Args: { "p_from": string,"p_to": string }; Returns: {
+              "ends_at": string,"starts_at": string
+            }[]
+                           },
+"cancel_appointment":
+{ Args: { "p_id": string,"p_reason"?: string }; Returns: boolean
+                           },
+"client_credit_balance":
 { Args: { "p_client_id": string,"p_type": string }; Returns: number
                            },
 "client_has_access":
@@ -1824,6 +1953,15 @@ isOneToOne: false
 "founder_slots_left":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
+"google_disconnect":
+{ Args: { "p_profile": string }; Returns: undefined
+                           },
+"google_get_token":
+{ Args: { "p_profile": string }; Returns: string
+                           },
+"google_store_token":
+{ Args: { "p_email": string,"p_profile": string,"p_token": string }; Returns: undefined
+                           },
 "has_feature":
 { Args: { "p_client_id": string,"p_feature": string }; Returns: boolean
                            },
@@ -1851,8 +1989,14 @@ isOneToOne: false
 "notify_staff":
 { Args: { "p_body"?: string,"p_client_id"?: string,"p_data"?: Json,"p_link"?: string,"p_title": string,"p_type": string }; Returns: undefined
                            },
+"reschedule_appointment":
+{ Args: { "p_id": string,"p_starts_at": string }; Returns: undefined
+                           },
 "reserve_founder_slot":
 { Args: { "p_client_id": string,"p_minutes"?: number,"p_subscription_id": string }; Returns: string
+                           },
+"slot_is_open":
+{ Args: { "p_end": string,"p_start": string,"p_type": string }; Returns: boolean
                            },
 "storage_owner_segment":
 { Args: { "p_name": string }; Returns: string

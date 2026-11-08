@@ -13,7 +13,7 @@ export default async function MorePage() {
   const items = [
     { href: "/perfil", label: t("profile"), icon: User, ready: true },
     { href: "/perfil/plan", label: t("plan"), icon: CreditCard, ready: true },
-    { href: "/agenda", label: t("agenda"), icon: CalendarDays, ready: false },
+    { href: "/agenda", label: t("agenda"), icon: CalendarDays, ready: true },
     { href: "/chat", label: t("chat"), icon: MessageSquare, ready: false },
     { href: "/retos", label: t("challenges"), icon: Trophy, ready: false },
     { href: "/perfil/privacidad", label: "Privacidad y datos", icon: ShieldCheck, ready: false },

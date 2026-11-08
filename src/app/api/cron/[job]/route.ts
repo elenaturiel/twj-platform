@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { serverEnv } from "@/lib/env.server";
 import { runBillingJob } from "@/features/billing/cron";
 import { runCheckinsJob } from "@/features/tracking/cron";
+import { runAgendaJob } from "@/features/agenda/cron";
 import { processOutbox, sendDigests } from "@/lib/notifications/worker";
 
 export const runtime = "nodejs";
@@ -11,6 +12,7 @@ export const maxDuration = 60;
 const JOBS = {
   billing: runBillingJob,
   checkins: runCheckinsJob,
+  agenda: runAgendaJob,
   notifications: (site: string) => processOutbox(site),
   digest: sendDigests,
 } as const;
