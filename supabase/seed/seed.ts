@@ -8,7 +8,7 @@
  * Cada fase amplía este script con su historial (entrenos, métricas, menús…).
  */
 import { createClient } from "@supabase/supabase-js";
-import type { Database } from "../../src/types/database";
+import type { Database, Json } from "../../src/types/database";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SECRET_KEY;
@@ -201,12 +201,15 @@ const clients: SeedClient[] = [
 ];
 
 async function main() {
-  // Idempotente: si los usuarios de demo ya existen, no hace nada
+  // Idempotente por fases: cada bloque solo se carga si aún no está
   const { data: existing } = await db.from("profiles").select("id").eq("email", "jaime@twj.local").maybeSingle();
-  if (existing) {
-    console.log("Semillas ya cargadas: no se hace nada.");
-    return;
-  }
+  if (existing) console.log("Fase 1 ya cargada.");
+  else await seedPhase1();
+  await seedTraining();
+  console.log(`\nListo. Contraseña de todos los usuarios: ${PASSWORD}`);
+}
+
+async function seedPhase1() {
   console.log("→ Staff");
   const jaime = await createUser("jaime@twj.local", "Jaime");
   const elena = await createUser("elena@twj.local", "Elena");
@@ -421,8 +424,356 @@ async function main() {
       new_value: [1, 3, 5],
     });
   }
+}
 
-  console.log(`\nListo. Contraseña de todos los usuarios: ${PASSWORD}`);
+// ───────────────────────────── Fase 2: entrenamiento ─────────────────────────────
+
+type SeedItem = { exercise: string; p: Record<string, unknown> };
+type SeedPart = {
+  modality: "gym" | "functional" | "running" | "hyrox";
+  format: string;
+  params?: Record<string, unknown>;
+  title?: string;
+  items: SeedItem[];
+};
+type SeedSession = { title: string; day: number; parts: SeedPart[] };
+
+const SESSIONS: Record<string, SeedSession[]> = {
+  gym: [
+    {
+      title: "Pierna",
+      day: 0,
+      parts: [
+        {
+          modality: "gym",
+          format: "straight",
+          items: [
+            { exercise: "Sentadilla trasera", p: { sets: 4, reps: "6-8", load_kg: 70, rpe: 8, rest_s: 150 } },
+            { exercise: "Peso muerto rumano", p: { sets: 3, reps: "10", load_kg: 50, rpe: 7, rest_s: 90 } },
+            { exercise: "Zancada búlgara", p: { sets: 3, reps: "10/10", load_kg: 12, rest_s: 60 } },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Torso",
+      day: 2,
+      parts: [
+        {
+          modality: "gym",
+          format: "straight",
+          items: [
+            { exercise: "Press banca", p: { sets: 4, reps: "6-8", load_kg: 50, rpe: 8, rest_s: 150 } },
+            { exercise: "Dominadas", p: { sets: 4, reps: "6-8", rest_s: 120 } },
+            { exercise: "Press militar", p: { sets: 3, reps: "8-10", load_kg: 30, rest_s: 90 } },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Full body + core",
+      day: 4,
+      parts: [
+        {
+          modality: "gym",
+          format: "straight",
+          items: [
+            { exercise: "Peso muerto", p: { sets: 3, reps: "5", load_kg: 90, rpe: 8, rest_s: 180 } },
+            { exercise: "Remo con barra", p: { sets: 3, reps: "10", load_kg: 40, rest_s: 90 } },
+            { exercise: "Plancha", p: { sets: 3, duration_s: 45, rest_s: 45 } },
+          ],
+        },
+      ],
+    },
+  ],
+  running: [
+    {
+      title: "Rodaje suave",
+      day: 1,
+      parts: [
+        {
+          modality: "running",
+          format: "run",
+          items: [
+            {
+              exercise: "Rodaje suave",
+              p: { run_type: "rodaje", distance_m: 6000, pace_min_s: 360, pace_max_s: 390, hr_zone: "Z2" },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Series",
+      day: 3,
+      parts: [
+        {
+          modality: "running",
+          format: "run",
+          title: "Calentamiento",
+          items: [{ exercise: "Rodaje suave", p: { run_type: "calentamiento", duration_s: 900, hr_zone: "Z1-Z2" } }],
+        },
+        {
+          modality: "running",
+          format: "run",
+          title: "Bloque principal",
+          items: [
+            {
+              exercise: "Series",
+              p: { run_type: "series", repeat: 6, distance_m: 400, pace_min_s: 270, pace_max_s: 285, rest_s: 90 },
+            },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Tirada larga",
+      day: 6,
+      parts: [
+        {
+          modality: "running",
+          format: "run",
+          items: [
+            {
+              exercise: "Tirada larga",
+              p: { run_type: "tirada_larga", distance_m: 12000, pace_min_s: 375, pace_max_s: 405, hr_zone: "Z2" },
+            },
+          ],
+        },
+      ],
+    },
+  ],
+  functional: [
+    {
+      title: "WOD 1",
+      day: 1,
+      parts: [
+        {
+          modality: "functional",
+          format: "amrap",
+          params: { minutes: 12 },
+          items: [
+            { exercise: "Kettlebell swing", p: { reps: "15", load_kg: 16 } },
+            { exercise: "Burpees", p: { reps: "10" } },
+            { exercise: "Box jump", p: { reps: "12" } },
+          ],
+        },
+      ],
+    },
+    {
+      title: "EMOM + fuerza",
+      day: 3,
+      parts: [
+        {
+          modality: "gym",
+          format: "straight",
+          items: [{ exercise: "Sentadilla goblet", p: { sets: 4, reps: "10", load_kg: 20, rest_s: 90 } }],
+        },
+        {
+          modality: "functional",
+          format: "emom",
+          params: { minutes: 10, every_s: 60 },
+          items: [{ exercise: "Thruster", p: { reps: "10", load_kg: 20 } }],
+        },
+      ],
+    },
+  ],
+  hyrox: [
+    {
+      title: "Fuerza HYROX",
+      day: 0,
+      parts: [
+        {
+          modality: "gym",
+          format: "straight",
+          items: [
+            { exercise: "Sentadilla trasera", p: { sets: 4, reps: "5", load_kg: 90, rpe: 8, rest_s: 150 } },
+            { exercise: "Peso muerto", p: { sets: 3, reps: "5", load_kg: 110, rest_s: 180 } },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Estaciones + carrera",
+      day: 2,
+      parts: [
+        {
+          modality: "running",
+          format: "run",
+          items: [
+            {
+              exercise: "Series",
+              p: { run_type: "series", repeat: 4, distance_m: 1000, pace_min_s: 270, pace_max_s: 280, rest_s: 60 },
+            },
+          ],
+        },
+        {
+          modality: "hyrox",
+          format: "hyrox_stations",
+          params: { category: "Open" },
+          items: [
+            { exercise: "SkiErg", p: { station_key: "skierg", distance_m: 1000, target_split_s: 255 } },
+            { exercise: "Wall ball", p: { station_key: "wall_balls", reps: "100", target_split_s: 330 } },
+          ],
+        },
+      ],
+    },
+    {
+      title: "Simulacro parcial",
+      day: 5,
+      parts: [
+        {
+          modality: "hyrox",
+          format: "hyrox_sim",
+          params: { time_cap_s: 2700, category: "Open" },
+          items: [
+            { exercise: "Sled Push", p: { station_key: "sled_push", distance_m: 50 } },
+            { exercise: "Sled Pull", p: { station_key: "sled_pull", distance_m: 50 } },
+            { exercise: "Burpee Broad Jumps", p: { station_key: "burpee_broad_jumps", distance_m: 80 } },
+            { exercise: "Farmers Carry", p: { station_key: "farmers_carry", distance_m: 200 } },
+          ],
+        },
+      ],
+    },
+  ],
+};
+
+function lastMonday(d: Date) {
+  const r = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  r.setUTCDate(r.getUTCDate() - ((r.getUTCDay() + 6) % 7));
+  return r;
+}
+
+async function seedTraining() {
+  const { count } = await db.from("workout_blocks").select("id", { count: "exact", head: true });
+  if (count) return console.log("Fase 2 ya cargada.");
+  console.log("→ Entrenamiento");
+  const { data: exercises } = await db.from("exercises").select("id, name");
+  const ex = new Map((exercises ?? []).map((e) => [e.name, e.id]));
+  const { data: clients } = await db
+    .from("clients")
+    .select("id, modalities, onboarding_completed_at, profiles(full_name)")
+    .not("onboarding_completed_at", "is", null);
+  const start = lastMonday(addDays(new Date(), -14)); // bloque empezado hace 2 semanas
+  const today = new Date();
+
+  for (const c of clients ?? []) {
+    const modality = (c.modalities[0] ?? "gym") as keyof typeof SESSIONS;
+    const sessions = SESSIONS[modality] ?? SESSIONS.gym!;
+    const [block] = await must(
+      db
+        .from("workout_blocks")
+        .insert({
+          client_id: c.id,
+          name: `Bloque 1 · ${modality === "running" ? "Base aeróbica" : modality === "hyrox" ? "HYROX 14-11" : "Fuerza base"}`,
+          goal: "Dato de demo",
+          starts_on: iso(start),
+          status: "active",
+        })
+        .select("id"),
+      "bloque",
+    );
+    for (let w = 0; w < 4; w++) {
+      const [week] = await must(
+        db
+          .from("workout_weeks")
+          .insert({ block_id: block!.id, client_id: c.id, week_index: w, is_deload: w === 3 })
+          .select("id"),
+        "semana",
+      );
+      for (const [si, s] of sessions.entries()) {
+        const [session] = await must(
+          db
+            .from("workout_sessions")
+            .insert({ week_id: week!.id, client_id: c.id, title: s.title, day_index: s.day, sort_order: si })
+            .select("id"),
+          "sesión",
+        );
+        for (const [pi, p] of s.parts.entries()) {
+          const [part] = await must(
+            db
+              .from("session_parts")
+              .insert({
+                session_id: session!.id,
+                client_id: c.id,
+                modality: p.modality,
+                format: p.format,
+                params: (p.params ?? {}) as NonNullable<Json>,
+                title: p.title ?? null,
+                sort_order: pi,
+              })
+              .select("id"),
+            "parte",
+          );
+          const items = p.items.map((it, ii) => ({
+            part_id: part!.id,
+            client_id: c.id,
+            exercise_id: ex.get(it.exercise) ?? null,
+            name: ex.has(it.exercise) ? null : it.exercise,
+            sort_order: ii,
+            // Semana de descarga: menos carga
+            prescription: (w === 3 && typeof it.p.load_kg === "number"
+              ? { ...it.p, load_kg: Math.round((it.p.load_kg as number) * 0.8) }
+              : it.p) as NonNullable<Json>,
+          }));
+          const created = await must(
+            db.from("session_items").insert(items).select("id, exercise_id, prescription"),
+            "ítems",
+          );
+
+          // Entrenos ya hechos: semanas 0 y 1 (con progresión)
+          if (w < 2) {
+            const date = addDays(start, w * 7 + s.day);
+            if (date > today) continue;
+            const logId = crypto.randomUUID();
+            await must(
+              db
+                .from("workout_logs")
+                .insert({
+                  id: logId,
+                  client_id: c.id,
+                  session_id: session!.id,
+                  title: s.title,
+                  started_at: new Date(date.getTime() + 18 * 3600_000).toISOString(),
+                  completed_at: new Date(date.getTime() + 19 * 3600_000).toISOString(),
+                  total_time_s: 3300 + w * 120,
+                  session_rpe: 7 + w,
+                  feeling: 4,
+                })
+                .select("id"),
+              "log",
+            );
+            const sets = created.flatMap((it) => {
+              const pr = it.prescription as Record<string, number | string>;
+              const n = Number(pr.repeat ?? pr.sets ?? 1);
+              return Array.from({ length: n }, (_, i) => ({
+                id: crypto.randomUUID(),
+                workout_log_id: logId,
+                client_id: c.id,
+                session_item_id: it.id,
+                exercise_id: it.exercise_id,
+                set_index: i,
+                reps: typeof pr.reps === "string" ? Number.parseInt(pr.reps, 10) || null : null,
+                load_kg: typeof pr.load_kg === "number" ? pr.load_kg + w * 2.5 : null,
+                distance_m: typeof pr.distance_m === "number" ? pr.distance_m : null,
+                duration_s:
+                  typeof pr.distance_m === "number" && typeof pr.pace_min_s === "number"
+                    ? Math.round((pr.distance_m / 1000) * (pr.pace_max_s as number)) - w * 5
+                    : null,
+                station_key: typeof pr.station_key === "string" ? pr.station_key : null,
+              }));
+            });
+            if (sets.length) await must(db.from("set_logs").insert(sets).select("id"), "series");
+          }
+        }
+      }
+    }
+    await db
+      .from("clients")
+      .update({ last_activity_at: new Date(addDays(start, 7 + 4).getTime() + 19 * 3600_000).toISOString() })
+      .eq("id", c.id);
+    console.log(`  ✓ plan de ${c.profiles?.full_name}`);
+  }
 }
 
 main().catch((e) => {

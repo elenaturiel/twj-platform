@@ -239,6 +239,52 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"exercise_relations": {
+                  Row: {
+                    "exercise_id": string,"kind": string,"related_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "exercise_id": string,"kind": string,"related_id": string
+                  }
+                  Update: {
+                    "exercise_id"?: string,"kind"?: string,"related_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "exercise_relations_exercise_id_fkey"
+      columns: ["exercise_id"]
+isOneToOne: false
+      referencedRelation: "exercises"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "exercise_relations_related_id_fkey"
+      columns: ["related_id"]
+isOneToOne: false
+      referencedRelation: "exercises"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"exercises": {
+                  Row: {
+                    "common_mistakes": string | null,"created_at": string,"created_by": string | null,"equipment": (string)[],"id": string,"instructions": string | null,"is_active": boolean,"modality": string,"muscle_groups": (string)[],"name": string,"tags": (string)[],"updated_at": string,"video_provider": string | null,"video_url": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "common_mistakes"?: string | null,"created_at"?: string,"created_by"?: string | null,"equipment"?: (string)[],"id"?: string,"instructions"?: string | null,"is_active"?: boolean,"modality"?: string,"muscle_groups"?: (string)[],"name": string,"tags"?: (string)[],"updated_at"?: string,"video_provider"?: string | null,"video_url"?: string | null
+                  }
+                  Update: {
+                    "common_mistakes"?: string | null,"created_at"?: string,"created_by"?: string | null,"equipment"?: (string)[],"id"?: string,"instructions"?: string | null,"is_active"?: boolean,"modality"?: string,"muscle_groups"?: (string)[],"name"?: string,"tags"?: (string)[],"updated_at"?: string,"video_provider"?: string | null,"video_url"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "exercises_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"features": {
                   Row: {
                     "description": string | null,"key": string,"kind": string,"name": string,"sort_order": number,"unit": string | null
@@ -294,6 +340,40 @@ isOneToOne: false
     },{
       foreignKeyName: "health_screenings_reviewed_by_fkey"
       columns: ["reviewed_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"hyrox_stations": {
+                  Row: {
+                    "default_distance_m": number | null,"default_reps": number | null,"key": string,"name": string,"sort_order": number,"weights": NonNullable<Json>
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "default_distance_m"?: number | null,"default_reps"?: number | null,"key": string,"name": string,"sort_order": number,"weights"?: NonNullable<Json>
+                  }
+                  Update: {
+                    "default_distance_m"?: number | null,"default_reps"?: number | null,"key"?: string,"name"?: string,"sort_order"?: number,"weights"?: NonNullable<Json>
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"import_jobs": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"file_name": string | null,"id": string,"kind": string,"row_errors": NonNullable<Json>,"status": string,"summary": NonNullable<Json>,"target": NonNullable<Json>
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"file_name"?: string | null,"id"?: string,"kind": string,"row_errors"?: NonNullable<Json>,"status"?: string,"summary"?: NonNullable<Json>,"target"?: NonNullable<Json>
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"file_name"?: string | null,"id"?: string,"kind"?: string,"row_errors"?: NonNullable<Json>,"status"?: string,"summary"?: NonNullable<Json>,"target"?: NonNullable<Json>
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "import_jobs_created_by_fkey"
+      columns: ["created_by"]
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
@@ -515,6 +595,44 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"personal_records": {
+                  Row: {
+                    "achieved_at": string,"client_id": string,"exercise_id": string | null,"id": string,"record_key": string,"record_type": string,"set_log_id": string | null,"unit": string,"value": number,"workout_log_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "achieved_at"?: string,"client_id": string,"exercise_id"?: string | null,"id"?: string,"record_key"?: string,"record_type": string,"set_log_id"?: string | null,"unit": string,"value": number,"workout_log_id"?: string | null
+                  }
+                  Update: {
+                    "achieved_at"?: string,"client_id"?: string,"exercise_id"?: string | null,"id"?: string,"record_key"?: string,"record_type"?: string,"set_log_id"?: string | null,"unit"?: string,"value"?: number,"workout_log_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "personal_records_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "personal_records_exercise_id_fkey"
+      columns: ["exercise_id"]
+isOneToOne: false
+      referencedRelation: "exercises"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "personal_records_set_log_id_fkey"
+      columns: ["set_log_id"]
+isOneToOne: false
+      referencedRelation: "set_logs"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "personal_records_workout_log_id_fkey"
+      columns: ["workout_log_id"]
+isOneToOne: false
+      referencedRelation: "workout_logs"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"plan_features": {
                   Row: {
                     "enabled": boolean,"feature_key": string,"label": string | null,"limit_value": number | null,"plan_id": string
@@ -711,6 +829,108 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"session_items": {
+                  Row: {
+                    "client_id": string | null,"exercise_id": string | null,"id": string,"name": string | null,"notes": string | null,"part_id": string,"prescription": NonNullable<Json>,"sort_order": number,"superset_group": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id"?: string | null,"exercise_id"?: string | null,"id"?: string,"name"?: string | null,"notes"?: string | null,"part_id": string,"prescription"?: NonNullable<Json>,"sort_order"?: number,"superset_group"?: string | null
+                  }
+                  Update: {
+                    "client_id"?: string | null,"exercise_id"?: string | null,"id"?: string,"name"?: string | null,"notes"?: string | null,"part_id"?: string,"prescription"?: NonNullable<Json>,"sort_order"?: number,"superset_group"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "session_items_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "session_items_exercise_id_fkey"
+      columns: ["exercise_id"]
+isOneToOne: false
+      referencedRelation: "exercises"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "session_items_part_id_fkey"
+      columns: ["part_id"]
+isOneToOne: false
+      referencedRelation: "session_parts"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"session_parts": {
+                  Row: {
+                    "client_id": string | null,"format": string,"id": string,"modality": string,"notes": string | null,"params": NonNullable<Json>,"session_id": string,"sort_order": number,"title": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id"?: string | null,"format"?: string,"id"?: string,"modality": string,"notes"?: string | null,"params"?: NonNullable<Json>,"session_id": string,"sort_order"?: number,"title"?: string | null
+                  }
+                  Update: {
+                    "client_id"?: string | null,"format"?: string,"id"?: string,"modality"?: string,"notes"?: string | null,"params"?: NonNullable<Json>,"session_id"?: string,"sort_order"?: number,"title"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "session_parts_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "session_parts_session_id_fkey"
+      columns: ["session_id"]
+isOneToOne: false
+      referencedRelation: "workout_sessions"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"set_logs": {
+                  Row: {
+                    "client_id": string,"created_at": string,"distance_m": number | null,"duration_s": number | null,"exercise_id": string | null,"hr_avg": number | null,"id": string,"load_kg": number | null,"notes": string | null,"pace_s_per_km": number | null,"reps": number | null,"rpe": number | null,"session_item_id": string | null,"set_index": number,"station_key": string | null,"workout_log_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id": string,"created_at"?: string,"distance_m"?: number | null,"duration_s"?: number | null,"exercise_id"?: string | null,"hr_avg"?: number | null,"id": string,"load_kg"?: number | null,"notes"?: string | null,"pace_s_per_km"?: number | null,"reps"?: number | null,"rpe"?: number | null,"session_item_id"?: string | null,"set_index"?: number,"station_key"?: string | null,"workout_log_id": string
+                  }
+                  Update: {
+                    "client_id"?: string,"created_at"?: string,"distance_m"?: number | null,"duration_s"?: number | null,"exercise_id"?: string | null,"hr_avg"?: number | null,"id"?: string,"load_kg"?: number | null,"notes"?: string | null,"pace_s_per_km"?: number | null,"reps"?: number | null,"rpe"?: number | null,"session_item_id"?: string | null,"set_index"?: number,"station_key"?: string | null,"workout_log_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "set_logs_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "set_logs_exercise_id_fkey"
+      columns: ["exercise_id"]
+isOneToOne: false
+      referencedRelation: "exercises"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "set_logs_session_item_id_fkey"
+      columns: ["session_item_id"]
+isOneToOne: false
+      referencedRelation: "session_items"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "set_logs_station_key_fkey"
+      columns: ["station_key"]
+isOneToOne: false
+      referencedRelation: "hyrox_stations"
+      referencedColumns: ["key"]
+    },{
+      foreignKeyName: "set_logs_workout_log_id_fkey"
+      columns: ["workout_log_id"]
+isOneToOne: false
+      referencedRelation: "workout_logs"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"settings": {
                   Row: {
                     "description": string | null,"is_public": boolean,"key": string,"updated_at": string,"updated_by": string | null,"value": NonNullable<Json>
@@ -869,6 +1089,130 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"workout_blocks": {
+                  Row: {
+                    "client_id": string | null,"created_at": string,"goal": string | null,"id": string,"name": string,"notes": string | null,"sort_order": number,"starts_on": string | null,"status": string,"template_id": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id"?: string | null,"created_at"?: string,"goal"?: string | null,"id"?: string,"name": string,"notes"?: string | null,"sort_order"?: number,"starts_on"?: string | null,"status"?: string,"template_id"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "client_id"?: string | null,"created_at"?: string,"goal"?: string | null,"id"?: string,"name"?: string,"notes"?: string | null,"sort_order"?: number,"starts_on"?: string | null,"status"?: string,"template_id"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "workout_blocks_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "workout_blocks_template_id_fkey"
+      columns: ["template_id"]
+isOneToOne: false
+      referencedRelation: "workout_templates"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"workout_logs": {
+                  Row: {
+                    "client_id": string,"coach_notified_at": string | null,"comment": string | null,"completed_at": string | null,"created_at": string,"feeling": number | null,"id": string,"session_id": string | null,"session_rpe": number | null,"started_at": string,"title": string | null,"total_time_s": number | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id": string,"coach_notified_at"?: string | null,"comment"?: string | null,"completed_at"?: string | null,"created_at"?: string,"feeling"?: number | null,"id": string,"session_id"?: string | null,"session_rpe"?: number | null,"started_at"?: string,"title"?: string | null,"total_time_s"?: number | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "client_id"?: string,"coach_notified_at"?: string | null,"comment"?: string | null,"completed_at"?: string | null,"created_at"?: string,"feeling"?: number | null,"id"?: string,"session_id"?: string | null,"session_rpe"?: number | null,"started_at"?: string,"title"?: string | null,"total_time_s"?: number | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "workout_logs_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "workout_logs_session_id_fkey"
+      columns: ["session_id"]
+isOneToOne: false
+      referencedRelation: "workout_sessions"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"workout_sessions": {
+                  Row: {
+                    "client_id": string | null,"created_at": string,"day_index": number | null,"id": string,"notes": string | null,"published": boolean,"sort_order": number,"title": string,"updated_at": string,"week_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id"?: string | null,"created_at"?: string,"day_index"?: number | null,"id"?: string,"notes"?: string | null,"published"?: boolean,"sort_order"?: number,"title": string,"updated_at"?: string,"week_id": string
+                  }
+                  Update: {
+                    "client_id"?: string | null,"created_at"?: string,"day_index"?: number | null,"id"?: string,"notes"?: string | null,"published"?: boolean,"sort_order"?: number,"title"?: string,"updated_at"?: string,"week_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "workout_sessions_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "workout_sessions_week_id_fkey"
+      columns: ["week_id"]
+isOneToOne: false
+      referencedRelation: "workout_weeks"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"workout_templates": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"description": string | null,"id": string,"modalities": (string)[],"name": string,"tags": (string)[],"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"modalities"?: (string)[],"name": string,"tags"?: (string)[],"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"modalities"?: (string)[],"name"?: string,"tags"?: (string)[],"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "workout_templates_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"workout_weeks": {
+                  Row: {
+                    "block_id": string,"client_id": string | null,"id": string,"is_deload": boolean,"notes": string | null,"week_index": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "block_id": string,"client_id"?: string | null,"id"?: string,"is_deload"?: boolean,"notes"?: string | null,"week_index": number
+                  }
+                  Update: {
+                    "block_id"?: string,"client_id"?: string | null,"id"?: string,"is_deload"?: boolean,"notes"?: string | null,"week_index"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "workout_weeks_block_id_fkey"
+      columns: ["block_id"]
+isOneToOne: false
+      referencedRelation: "workout_blocks"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "workout_weeks_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    }
+                  ]
                 }
           }
           Views: {
@@ -934,6 +1278,12 @@ isOneToOne: false
                            },
 "client_has_access":
 { Args: { "p_client_id": string }; Returns: boolean
+                           },
+"copy_block":
+{ Args: { "p_block": string,"p_client": string,"p_name"?: string,"p_starts_on": string,"p_template": string }; Returns: string
+                           },
+"copy_week":
+{ Args: { "p_as_deload"?: boolean,"p_week": string }; Returns: string
                            },
 "current_role_name":
 { Args: Record<PropertyKey, never>; Returns: string

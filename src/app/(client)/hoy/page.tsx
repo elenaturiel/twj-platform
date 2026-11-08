@@ -3,6 +3,9 @@ import Link from "next/link";
 import { Dumbbell, Video } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requireClientWithAccess } from "@/lib/auth/dal";
+import { todayInMadrid } from "@/lib/dates";
+import { getTrainingOverview } from "@/features/training/queries";
+import { MODALITY_LABELS } from "@/domain/training/prescription";
 import { getPublicSettings } from "@/lib/settings";
 import { createClient } from "@/lib/supabase/server";
 import { EmptyState } from "@/components/twj/empty-state";
@@ -24,6 +27,7 @@ export default async function TodayPage() {
     p_feature: "live_sessions",
   });
   const firstName = ctx.viewer.fullName.split(" ")[0] || "crack";
+  const { todaySession, done } = await getTrainingOverview(ctx.client.id, todayInMadrid());
 
   return (
     <div className="space-y-5">
@@ -67,11 +71,29 @@ export default async function TodayPage() {
       </Card>
 
       <section className="space-y-2">
-        <div className="flex items-center gap-2">
-          <h2 className="text-xl font-bold">{t("todayWorkout")}</h2>
-          <Badge variant="secondary">{t("comingSoon")}</Badge>
-        </div>
-        <EmptyState icon={Dumbbell} title={(await getTranslations("empty"))("workouts")} />
+        <h2 className="text-xl font-bold">{t("todayWorkout")}</h2>
+        {todaySession ? (
+          <Link
+            href={`/entreno/sesion/${todaySession.id}`}
+            className="flex items-center gap-3 rounded-2xl border p-4 hover:bg-muted/50"
+          >
+            <Dumbbell className="size-7 shrink-0 text-accent" aria-hidden />
+            <span className="flex-1">
+              <span className="text-lg font-bold">{todaySession.title}</span>
+              <span className="block text-xs text-muted-foreground">
+                {[...new Set(todaySession.session_parts.map((p) => MODALITY_LABELS[p.modality]))].join(" + ")}
+                {done.has(todaySession.id) ? " · ✅ hecho" : ""}
+              </span>
+            </span>
+            <Badge>{done.has(todaySession.id) ? "Repetir" : "Empezar"}</Badge>
+          </Link>
+        ) : (
+          <EmptyState icon={Dumbbell} title={t("noWorkout")}>
+            <Link href="/entreno" className="text-sm underline">
+              Ver la semana
+            </Link>
+          </EmptyState>
+        )}
       </section>
     </div>
   );

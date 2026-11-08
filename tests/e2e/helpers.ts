@@ -7,6 +7,8 @@ export async function login(page: Page, email: string, password = DEMO_PASSWORD)
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Contraseña", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Entrar", exact: true }).click();
+  // Espera a que la sesión esté creada antes de navegar a otra página
+  await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 20_000 });
 }
 
 export function uniqueEmail(prefix: string) {

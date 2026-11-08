@@ -4,6 +4,7 @@ import { requireClientWithAccess } from "@/lib/auth/dal";
 import { Logo } from "@/components/twj/logo";
 import { ThemeToggle } from "@/components/twj/theme-toggle";
 import { formatDate } from "@/features/clients/ui";
+import { OutboxSync } from "@/features/training/ui/outbox-sync";
 import { ClientBottomNav } from "./client-nav";
 
 export default async function ClientLayout({ children }: LayoutProps<"/">) {
@@ -30,6 +31,7 @@ export default async function ClientLayout({ children }: LayoutProps<"/">) {
       </header>
       <main className="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24">{children}</main>
       <ClientBottomNav />
+      <OutboxSync />
     </div>
   );
 }
