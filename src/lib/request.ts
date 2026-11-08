@@ -8,7 +8,7 @@ export async function requestOrigin() {
   const host = h.get("x-forwarded-host") ?? h.get("host");
   const proto =
     h.get("x-forwarded-proto") ?? (host?.startsWith("localhost") || host?.startsWith("127.") ? "http" : "https");
-  return host ? `${proto}://${host}` : publicEnv.NEXT_PUBLIC_SITE_URL;
+  return host ? `${proto}://${host}` : publicEnv().NEXT_PUBLIC_SITE_URL;
 }
 
 export async function requestMeta() {

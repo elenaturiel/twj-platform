@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { publicEnv } from "@/lib/env";
+import { hasSupabaseConfig, publicEnv } from "@/lib/env";
 import type { Database } from "@/types/database";
 
 // Rutas que no requieren sesión
@@ -16,6 +16,7 @@ const PUBLIC_PREFIXES = [
   "/api/webhooks",
   "/api/cron",
   "/api/public",
+  "/api/health",
   "/offline",
 ];
 
@@ -30,10 +31,13 @@ export function isPublicPath(pathname: string) {
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
+  // Sin configuración de Supabase no hay sesión que refrescar: deja pasar
+  // (la página /api/health explica qué falta).
+  if (!hasSupabaseConfig()) return response;
 
   const supabase = createServerClient<Database>(
-    publicEnv.NEXT_PUBLIC_SUPABASE_URL,
-    publicEnv.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    publicEnv().NEXT_PUBLIC_SUPABASE_URL,
+    publicEnv().NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     {
       cookies: {
         getAll() {

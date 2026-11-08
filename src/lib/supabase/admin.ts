@@ -10,7 +10,7 @@ import type { Database } from "@/types/database";
  * vengan del usuario sin validar ni para leer en nombre de un usuario.
  */
 export function createAdminClient() {
-  return createClient<Database>(publicEnv.NEXT_PUBLIC_SUPABASE_URL, serverEnv().SUPABASE_SECRET_KEY, {
+  return createClient<Database>(publicEnv().NEXT_PUBLIC_SUPABASE_URL, serverEnv().SUPABASE_SECRET_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
