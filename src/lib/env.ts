@@ -8,11 +8,16 @@ const publicSchema = z.object({
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1),
 });
 
+// Recorta espacios y saltos de línea que se cuelan al copiar y pegar en Vercel
+const clean = (v: string | undefined) => v?.trim() || undefined;
+
 function readPublicEnv() {
+  const site = clean(process.env.NEXT_PUBLIC_SITE_URL);
   return {
-    NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || undefined,
-    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    // Una URL del sitio mal escrita no debe tumbar la app: se ignora
+    NEXT_PUBLIC_SITE_URL: site && z.url().safeParse(site).success ? site : undefined,
+    NEXT_PUBLIC_SUPABASE_URL: clean(process.env.NEXT_PUBLIC_SUPABASE_URL)?.replace(/\/+$/, ""),
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: clean(process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY),
   };
 }
 
@@ -36,4 +41,10 @@ export function publicEnv() {
 
 export function hasSupabaseConfig() {
   return publicSchema.safeParse(readPublicEnv()).success;
+}
+
+/** Qué variable pública no pasa la validación (nombre y motivo, nunca el valor). */
+export function configProblem() {
+  const parsed = publicSchema.safeParse(readPublicEnv());
+  return parsed.success ? null : parsed.error.issues.map((i) => `${String(i.path[0])}: ${i.message}`).join("; ");
 }
