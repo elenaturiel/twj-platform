@@ -63,7 +63,13 @@ export async function GET() {
             ? "formato no reconocido"
             : "vacía";
   const format = {
-    supabaseUrl: rawUrl,
+    // Solo se muestra si de verdad es una URL de Supabase; si alguien pega una clave
+    // en esta variable por error, se indica el tipo y nunca el valor.
+    supabaseUrl: /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(rawUrl.trim())
+      ? rawUrl.trim()
+      : rawUrl.trim().startsWith("http")
+        ? "una URL que no es de Supabase (revisa que sea https://xxxx.supabase.co)"
+        : `no es una URL: parece ${keyKind(rawUrl.trim())}`,
     supabaseUrlHasSpaces: rawUrl !== rawUrl.trim(),
     supabaseUrlLooksRight: /^https:\/\/[a-z0-9]+\.supabase\.co\/?$/.test(rawUrl.trim()),
     publishableKey: keyKind(pub.trim()),
