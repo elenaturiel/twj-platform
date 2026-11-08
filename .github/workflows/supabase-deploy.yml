@@ -30,11 +30,16 @@ jobs:
       - name: ¿Están configurados los secretos?
         id: check
         run: |
-          if [ -n "$SUPABASE_ACCESS_TOKEN" ] && [ -n "$SUPABASE_DB_PASSWORD" ] && [ -n "$PROJECT_REF" ]; then
+          missing=""
+          [ -n "$SUPABASE_ACCESS_TOKEN" ] || missing="$missing SUPABASE_ACCESS_TOKEN"
+          [ -n "$SUPABASE_DB_PASSWORD" ] || missing="$missing SUPABASE_DB_PASSWORD"
+          [ -n "$PROJECT_REF" ] || missing="$missing SUPABASE_PROJECT_REF"
+          [ -n "$SUPABASE_SECRET_KEY" ] || echo "::warning::Falta SUPABASE_SECRET_KEY: no se cargarán los usuarios de demo."
+          if [ -z "$missing" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::Faltan secretos de Supabase; no se despliega nada."
-            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::error::Faltan estos secretos de repositorio (Settings → Secrets and variables → Actions → Repository secrets):$missing"
+            exit 1
           fi
       - uses: actions/checkout@v4
         if: steps.check.outputs.ready == 'true'
