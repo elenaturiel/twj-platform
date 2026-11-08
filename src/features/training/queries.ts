@@ -191,3 +191,27 @@ export async function getPreviousSets(clientId: string, exerciseIds: string[]) {
   for (const k of Object.keys(out)) out[k]!.reverse();
   return out;
 }
+
+/** Adherencia a entrenos: sesiones planificadas hasta hoy (bloques activos) vs hechas. */
+export async function getTrainingAdherence(clientId: string, today: string) {
+  const { sessionDate } = await import("@/domain/training/week");
+  const { adherencePercent } = await import("@/domain/tracking/progress");
+  const blocks = (await getClientBlocks(clientId)).filter((b) => b.status !== "draft");
+  const supabase = await createClient();
+  const planned: string[] = [];
+  for (const b of blocks)
+    for (const w of b.workout_weeks)
+      for (const s of w.workout_sessions) {
+        const d = sessionDate(b.starts_on, w.week_index, s.day_index);
+        if (d && d <= today && s.published) planned.push(s.id);
+      }
+  if (!planned.length) return { planned: 0, done: 0, percent: null as number | null };
+  const { data } = await supabase
+    .from("workout_logs")
+    .select("session_id")
+    .eq("client_id", clientId)
+    .in("session_id", planned)
+    .not("completed_at", "is", null);
+  const done = new Set((data ?? []).map((l) => l.session_id)).size;
+  return { planned: planned.length, done, percent: adherencePercent(planned.length, done) };
+}

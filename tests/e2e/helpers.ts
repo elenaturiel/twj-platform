@@ -1,3 +1,4 @@
+import { createClient } from "@supabase/supabase-js";
 import { expect, type Page } from "@playwright/test";
 
 export const DEMO_PASSWORD = "twj-demo-1234";
@@ -17,4 +18,15 @@ export function uniqueEmail(prefix: string) {
 
 export async function expectToast(page: Page, text: string | RegExp) {
   await expect(page.getByText(text).first()).toBeVisible();
+}
+
+/** Cliente con la clave secreta LOCAL para preparar datos de prueba (nunca contra producción). */
+export function testDb() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  if (!/127\.0\.0\.1|localhost/.test(url)) throw new Error("testDb solo funciona contra Supabase local");
+  return createClient(url, process.env.SUPABASE_SECRET_KEY ?? "", { auth: { persistSession: false } });
+}
+
+export function todayMadrid() {
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
 }

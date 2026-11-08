@@ -27,7 +27,16 @@ export default async function TodayPage() {
     p_feature: "live_sessions",
   });
   const firstName = ctx.viewer.fullName.split(" ")[0] || "crack";
-  const { todaySession, done } = await getTrainingOverview(ctx.client.id, todayInMadrid());
+  const [{ todaySession, done }, { data: pendingCheckin }] = await Promise.all([
+    getTrainingOverview(ctx.client.id, todayInMadrid()),
+    supabase
+      .from("checkins")
+      .select("id")
+      .eq("client_id", ctx.client.id)
+      .eq("status", "pending")
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   return (
     <div className="space-y-5">
@@ -45,6 +54,12 @@ export default async function TodayPage() {
           />
         ) : null}
       </div>
+
+      {pendingCheckin ? (
+        <Link href="/progreso/checkin" className="block rounded-2xl bg-accent p-4 font-semibold text-accent-foreground">
+          {t("checkinDue")} →
+        </Link>
+      ) : null}
 
       {/* El entreno en directo con Jaime es el diferenciador: siempre arriba */}
       <Card className="border-0 bg-gradient-to-br from-primary to-primary/85 text-primary-foreground">

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { EmptyState } from "@/components/twj/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OnboardingCallForm } from "@/features/clients/staff-forms";
+import { CustomFieldsEditor } from "@/features/tracking/ui/staff-tracking";
 import { formatDate } from "@/features/clients/ui";
 import { FIELD_LABELS, formatFieldValue } from "@/features/onboarding/labels";
 
@@ -23,7 +24,15 @@ const INTAKE_FIELDS = [
 export default async function ClientFile({ params }: PageProps<"/panel/clientes/[id]/ficha">) {
   const { id } = await params;
   const supabase = await createClient();
-  const [{ data: intake }, { data: health }, { data: changes }, { data: call }, { data: q }] = await Promise.all([
+  const [
+    { data: intake },
+    { data: health },
+    { data: changes },
+    { data: call },
+    { data: q },
+    { data: fields },
+    { data: values },
+  ] = await Promise.all([
     supabase.from("client_intake").select("*").eq("client_id", id).maybeSingle(),
     supabase
       .from("health_screenings")
@@ -40,6 +49,12 @@ export default async function ClientFile({ params }: PageProps<"/panel/clientes/
       .limit(50),
     supabase.from("onboarding_calls").select("*").eq("client_id", id).maybeSingle(),
     supabase.from("settings").select("value").eq("key", "health_screening.questions").single(),
+    supabase
+      .from("custom_fields")
+      .select("id, label, type, options, client_editable")
+      .eq("is_active", true)
+      .order("sort_order"),
+    supabase.from("custom_field_values").select("field_id, value").eq("client_id", id),
   ]);
   // Acceso a datos de salud: queda en la auditoría
   if (health) await supabase.rpc("log_access", { p_entity: "health_screenings", p_entity_id: id, p_client_id: id });
@@ -65,7 +80,16 @@ export default async function ClientFile({ params }: PageProps<"/panel/clientes/
           ) : (
             <EmptyState title="Aún no ha rellenado la ficha." />
           )}
-          <p className="mt-3 text-xs text-muted-foreground">Campos personalizados: llegan en la Fase 3.</p>
+          <div className="mt-4 space-y-2">
+            <p className="text-sm font-semibold">Campos personalizados</p>
+            <CustomFieldsEditor
+              clientId={id}
+              fields={(fields ?? []).map((f) => {
+                const v = values?.find((x) => x.field_id === f.id);
+                return { ...f, assigned: Boolean(v), value: v?.value == null ? "" : String(v.value) };
+              })}
+            />
+          </div>
         </CardContent>
       </Card>
 

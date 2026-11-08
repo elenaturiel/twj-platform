@@ -37,6 +37,78 @@ export type Database = {
                   Relationships: [
                     
                   ]
+                },"checkin_answers": {
+                  Row: {
+                    "checkin_id": string,"client_id": string,"question_key": string,"question_label": string,"value": Json | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "checkin_id": string,"client_id": string,"question_key": string,"question_label": string,"value"?: Json | null
+                  }
+                  Update: {
+                    "checkin_id"?: string,"client_id"?: string,"question_key"?: string,"question_label"?: string,"value"?: Json | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "checkin_answers_checkin_id_fkey"
+      columns: ["checkin_id"]
+isOneToOne: false
+      referencedRelation: "checkins"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "checkin_answers_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"checkin_templates": {
+                  Row: {
+                    "created_at": string,"id": string,"include_metrics": boolean,"include_photos": boolean,"is_default": boolean,"name": string,"questions": NonNullable<Json>,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"include_metrics"?: boolean,"include_photos"?: boolean,"is_default"?: boolean,"name": string,"questions"?: NonNullable<Json>,"updated_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"include_metrics"?: boolean,"include_photos"?: boolean,"is_default"?: boolean,"name"?: string,"questions"?: NonNullable<Json>,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"checkins": {
+                  Row: {
+                    "client_id": string,"created_at": string,"due_on": string,"id": string,"reminded_at": string | null,"reviewed_at": string | null,"reviewed_by": string | null,"staff_reply": string | null,"staff_voice_path": string | null,"status": string,"submitted_at": string | null,"template_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id": string,"created_at"?: string,"due_on": string,"id"?: string,"reminded_at"?: string | null,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"staff_reply"?: string | null,"staff_voice_path"?: string | null,"status"?: string,"submitted_at"?: string | null,"template_id"?: string | null
+                  }
+                  Update: {
+                    "client_id"?: string,"created_at"?: string,"due_on"?: string,"id"?: string,"reminded_at"?: string | null,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"staff_reply"?: string | null,"staff_voice_path"?: string | null,"status"?: string,"submitted_at"?: string | null,"template_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "checkins_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "checkins_reviewed_by_fkey"
+      columns: ["reviewed_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "checkins_template_id_fkey"
+      columns: ["template_id"]
+isOneToOne: false
+      referencedRelation: "checkin_templates"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"client_feature_overrides": {
                   Row: {
                     "client_id": string,"created_at": string,"created_by": string | null,"enabled": boolean,"feature_key": string,"limit_value": number | null,"reason": string | null
@@ -86,6 +158,32 @@ isOneToOne: false
       columns: ["client_id"]
 isOneToOne: true
       referencedRelation: "clients"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"client_metrics": {
+                  Row: {
+                    "activated_at": string,"client_id": string,"frequency": string,"is_active": boolean,"metric_id": string,"target_direction": string | null,"target_value": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "activated_at"?: string,"client_id": string,"frequency"?: string,"is_active"?: boolean,"metric_id": string,"target_direction"?: string | null,"target_value"?: number | null
+                  }
+                  Update: {
+                    "activated_at"?: string,"client_id"?: string,"frequency"?: string,"is_active"?: boolean,"metric_id"?: string,"target_direction"?: string | null,"target_value"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "client_metrics_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "client_metrics_metric_id_fkey"
+      columns: ["metric_id"]
+isOneToOne: false
+      referencedRelation: "metric_definitions"
       referencedColumns: ["id"]
     }
                   ]
@@ -166,6 +264,46 @@ isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
     }
+                  ]
+                },"custom_field_values": {
+                  Row: {
+                    "client_id": string,"field_id": string,"updated_at": string,"value": Json | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id": string,"field_id": string,"updated_at"?: string,"value"?: Json | null
+                  }
+                  Update: {
+                    "client_id"?: string,"field_id"?: string,"updated_at"?: string,"value"?: Json | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "custom_field_values_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "custom_field_values_field_id_fkey"
+      columns: ["field_id"]
+isOneToOne: false
+      referencedRelation: "custom_fields"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"custom_fields": {
+                  Row: {
+                    "client_editable": boolean,"created_at": string,"id": string,"is_active": boolean,"key": string,"label": string,"options": (string)[],"sort_order": number,"type": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_editable"?: boolean,"created_at"?: string,"id"?: string,"is_active"?: boolean,"key": string,"label": string,"options"?: (string)[],"sort_order"?: number,"type": string
+                  }
+                  Update: {
+                    "client_editable"?: boolean,"created_at"?: string,"id"?: string,"is_active"?: boolean,"key"?: string,"label"?: string,"options"?: (string)[],"sort_order"?: number,"type"?: string
+                  }
+                  Relationships: [
+                    
                   ]
                 },"discount_redemptions": {
                   Row: {
@@ -465,6 +603,52 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"metric_definitions": {
+                  Row: {
+                    "created_at": string,"higher_is_better": boolean | null,"id": string,"is_active": boolean,"is_system": boolean,"key": string,"name": string,"sort_order": number,"suggested_frequency": string,"type": string,"unit": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"higher_is_better"?: boolean | null,"id"?: string,"is_active"?: boolean,"is_system"?: boolean,"key": string,"name": string,"sort_order"?: number,"suggested_frequency"?: string,"type": string,"unit"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"higher_is_better"?: boolean | null,"id"?: string,"is_active"?: boolean,"is_system"?: boolean,"key"?: string,"name"?: string,"sort_order"?: number,"suggested_frequency"?: string,"type"?: string,"unit"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"metric_entries": {
+                  Row: {
+                    "checkin_id": string | null,"client_id": string,"created_at": string,"id": string,"metric_id": string,"recorded_on": string,"source": string,"value_num": number | null,"value_text": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "checkin_id"?: string | null,"client_id": string,"created_at"?: string,"id"?: string,"metric_id": string,"recorded_on": string,"source"?: string,"value_num"?: number | null,"value_text"?: string | null
+                  }
+                  Update: {
+                    "checkin_id"?: string | null,"client_id"?: string,"created_at"?: string,"id"?: string,"metric_id"?: string,"recorded_on"?: string,"source"?: string,"value_num"?: number | null,"value_text"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "metric_entries_checkin_id_fkey"
+      columns: ["checkin_id"]
+isOneToOne: false
+      referencedRelation: "checkins"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "metric_entries_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "metric_entries_metric_id_fkey"
+      columns: ["metric_id"]
+isOneToOne: false
+      referencedRelation: "metric_definitions"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"notification_outbox": {
                   Row: {
                     "attempts": number,"channel": string,"created_at": string,"digest": boolean,"error": string | null,"id": string,"notification_id": string | null,"payload": NonNullable<Json>,"profile_id": string,"scheduled_for": string,"sent_at": string | null,"status": string,"template_key": string | null
@@ -744,6 +928,32 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"progress_photos": {
+                  Row: {
+                    "checkin_id": string | null,"client_id": string,"created_at": string,"id": string,"pose": string,"storage_path": string,"taken_on": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "checkin_id"?: string | null,"client_id": string,"created_at"?: string,"id"?: string,"pose"?: string,"storage_path": string,"taken_on": string
+                  }
+                  Update: {
+                    "checkin_id"?: string | null,"client_id"?: string,"created_at"?: string,"id"?: string,"pose"?: string,"storage_path"?: string,"taken_on"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "progress_photos_checkin_id_fkey"
+      columns: ["checkin_id"]
+isOneToOne: false
+      referencedRelation: "checkins"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "progress_photos_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"push_subscriptions": {
                   Row: {

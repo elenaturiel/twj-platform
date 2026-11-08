@@ -1,6 +1,17 @@
 "use client";
 
-import { BookOpen, CalendarDays, CreditCard, Home, Inbox, LineChart, Settings, Tags, Users } from "lucide-react";
+import {
+  Activity,
+  BookOpen,
+  CalendarDays,
+  CreditCard,
+  Home,
+  Inbox,
+  LineChart,
+  Settings,
+  Tags,
+  Users,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { BottomNav, SideNav, type NavItem } from "@/components/twj/nav";
 
@@ -12,6 +23,7 @@ function useItems(): NavItem[] {
     { href: "/panel/pendientes", label: t("pending"), icon: Inbox },
     { href: "/panel/agenda", label: t("agenda"), icon: CalendarDays },
     { href: "/panel/biblioteca", label: t("library"), icon: BookOpen },
+    { href: "/panel/seguimiento", label: t("tracking"), icon: Activity },
     { href: "/panel/pagos", label: t("payments"), icon: CreditCard },
     { href: "/panel/negocio", label: t("business"), icon: LineChart },
     { href: "/panel/planes", label: t("plans"), icon: Tags },

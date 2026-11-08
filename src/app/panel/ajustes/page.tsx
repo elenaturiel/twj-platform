@@ -14,7 +14,7 @@ const EDITABLE: Record<string, string> = {
   "billing.extra_session_price_cents": "Precio sesión extra (céntimos)",
   "billing.max_total_discount_percent": "Tope de la suma de descuentos (%; null = sin tope)",
   "notifications.digest_hour": "Hora del resumen diario",
-  "checkins.default_weekday": "Día del check-in por defecto (0 = domingo)",
+  "checkins.default_weekday": "Día del check-in por defecto (0 = lunes … 6 = domingo)",
 };
 
 export default async function SettingsPage() {

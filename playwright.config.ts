@@ -1,5 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// En local, las claves de Supabase están en .env.local (en CI vienen del entorno)
+try {
+  process.loadEnvFile(".env.local");
+} catch {}
+
 const PORT = Number(process.env.E2E_PORT ?? 3000);
 
 /**

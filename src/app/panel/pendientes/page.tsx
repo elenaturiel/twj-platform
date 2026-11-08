@@ -13,32 +13,60 @@ export const metadata: Metadata = { title: "Pendientes" };
 export default async function PendingPage() {
   await requireStaff();
   const supabase = await createClient();
-  const [{ data: cards }, { data: leads }, { data: flags }, { data: pendingPay }] = await Promise.all([
-    supabase
-      .from("student_verifications")
-      .select("id, client_id, card_path, created_at, clients(profiles(full_name))")
-      .eq("status", "pending")
-      .order("created_at"),
-    supabase
-      .from("leads")
-      .select("id, name, email, phone, pack_weeks, event_name, event_date, message, created_at")
-      .in("status", ["new", "contacted"])
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("health_screenings")
-      .select("id, client_id, created_at, clients(profiles(full_name))")
-      .eq("has_flags", true)
-      .is("reviewed_at", null),
-    supabase
-      .from("clients")
-      .select("id, created_at, billing_mode, profiles(full_name), plans(name)")
-      .eq("status", "pending_payment")
-      .eq("billing_mode", "manual"),
-  ]);
+  const [{ data: cards }, { data: leads }, { data: flags }, { data: pendingPay }, { data: checkins }] =
+    await Promise.all([
+      supabase
+        .from("student_verifications")
+        .select("id, client_id, card_path, created_at, clients(profiles(full_name))")
+        .eq("status", "pending")
+        .order("created_at"),
+      supabase
+        .from("leads")
+        .select("id, name, email, phone, pack_weeks, event_name, event_date, message, created_at")
+        .in("status", ["new", "contacted"])
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("health_screenings")
+        .select("id, client_id, created_at, clients(profiles(full_name))")
+        .eq("has_flags", true)
+        .is("reviewed_at", null),
+      supabase
+        .from("clients")
+        .select("id, created_at, billing_mode, profiles(full_name), plans(name)")
+        .eq("status", "pending_payment")
+        .eq("billing_mode", "manual"),
+      supabase
+        .from("checkins")
+        .select("id, client_id, due_on, submitted_at, clients(profiles(full_name))")
+        .eq("status", "submitted")
+        .order("submitted_at"),
+    ]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <h1 className="text-3xl font-extrabold">Pendientes</h1>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Check-ins por revisar ({checkins?.length ?? 0})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {checkins?.length ? (
+            <ul className="divide-y text-sm">
+              {checkins.map((c) => (
+                <li key={c.id} className="flex justify-between py-2">
+                  <Link href={`/panel/clientes/${c.client_id}/checkins`} className="font-medium hover:underline">
+                    {c.clients?.profiles?.full_name}
+                  </Link>
+                  <span className="text-xs text-muted-foreground">enviado {formatDate(c.submitted_at, true)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <EmptyState title="Todo revisado." />
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

@@ -4,6 +4,7 @@ import { ChevronRight } from "lucide-react";
 import { requireClientWithAccess } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/features/onboarding/profile-form";
+import { OwnCustomFields } from "@/features/tracking/ui/own-custom-fields";
 import type { IntakeInput } from "@/features/onboarding/schemas";
 
 export const metadata: Metadata = { title: "Perfil" };
@@ -11,7 +12,15 @@ export const metadata: Metadata = { title: "Perfil" };
 export default async function ProfilePage() {
   const ctx = await requireClientWithAccess();
   const supabase = await createClient();
-  const { data: i } = await supabase.from("client_intake").select("*").eq("client_id", ctx.client.id).single();
+  const [{ data: i }, { data: cf }] = await Promise.all([
+    supabase.from("client_intake").select("*").eq("client_id", ctx.client.id).single(),
+    supabase
+      .from("custom_field_values")
+      .select("value, custom_fields!inner(id, label, type, options, client_editable, is_active)")
+      .eq("client_id", ctx.client.id)
+      .eq("custom_fields.client_editable", true)
+      .eq("custom_fields.is_active", true),
+  ]);
 
   const defaults: IntakeInput = {
     goal: i?.goal ?? "",
@@ -47,6 +56,15 @@ export default async function ProfilePage() {
         <ChevronRight className="size-4" aria-hidden />
       </Link>
       <ProfileForm defaults={defaults} />
+      <OwnCustomFields
+        fields={(cf ?? []).map((v) => ({
+          id: v.custom_fields.id,
+          label: v.custom_fields.label,
+          type: v.custom_fields.type,
+          options: v.custom_fields.options,
+          value: v.value == null ? "" : String(v.value),
+        }))}
+      />
     </div>
   );
 }

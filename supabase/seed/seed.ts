@@ -206,6 +206,7 @@ async function main() {
   if (existing) console.log("Fase 1 ya cargada.");
   else await seedPhase1();
   await seedTraining();
+  await seedTracking();
   console.log(`\nListo. Contraseña de todos los usuarios: ${PASSWORD}`);
 }
 
@@ -774,6 +775,148 @@ async function seedTraining() {
       .eq("id", c.id);
     console.log(`  ✓ plan de ${c.profiles?.full_name}`);
   }
+}
+
+// ───────────────────────────── Fase 3: seguimiento ─────────────────────────────
+
+async function seedTracking() {
+  const { count } = await db.from("client_metrics").select("client_id", { count: "exact", head: true });
+  if (count) return console.log("Fase 3 ya cargada.");
+  console.log("→ Seguimiento");
+  const { data: defs } = await db.from("metric_definitions").select("id, key");
+  const def = (k: string) => defs!.find((d) => d.key === k)!.id;
+  const { data: tpl } = await db.from("checkin_templates").select("id, questions").eq("is_default", true).single();
+  const { data: staff } = await db.from("profiles").select("id").eq("role", "owner").single();
+  const { data: clients } = await db
+    .from("clients")
+    .select("id, modalities, profiles(full_name)")
+    .not("onboarding_completed_at", "is", null);
+  const today = new Date();
+
+  for (const [ci, c] of (clients ?? []).entries()) {
+    const running = c.modalities.includes("running");
+    const metrics = [
+      { key: "weight", target: running ? null : 75 - ci, dir: "down", freq: "weekly" },
+      { key: "waist", target: 80, dir: "down", freq: "monthly" },
+      {
+        key: running ? "steps" : "energy",
+        target: running ? 10000 : null,
+        dir: running ? "up" : null,
+        freq: running ? "daily" : "weekly",
+      },
+      { key: "plan_adherence", target: null, dir: null, freq: "weekly" },
+    ];
+    await must(
+      db
+        .from("client_metrics")
+        .insert(
+          metrics.map((m) => ({
+            client_id: c.id,
+            metric_id: def(m.key),
+            frequency: m.freq,
+            target_value: m.target,
+            target_direction: m.dir,
+          })),
+        )
+        .select("metric_id"),
+      "métricas",
+    );
+    // 6 semanas de registros con una tendencia creíble (datos ficticios)
+    const entries = [];
+    for (let w = 6; w >= 0; w--) {
+      const d = iso(addDays(today, -w * 7));
+      entries.push({
+        client_id: c.id,
+        metric_id: def("weight"),
+        recorded_on: d,
+        value_num: Math.round((79 - ci - (6 - w) * 0.35) * 10) / 10,
+      });
+      if (w % 3 === 0)
+        entries.push({ client_id: c.id, metric_id: def("waist"), recorded_on: d, value_num: 88 - (6 - w) * 0.5 });
+      entries.push({
+        client_id: c.id,
+        metric_id: def(running ? "steps" : "energy"),
+        recorded_on: d,
+        value_num: running ? 7000 + (6 - w) * 450 : 6 + ((w + ci) % 3),
+      });
+      entries.push({
+        client_id: c.id,
+        metric_id: def("plan_adherence"),
+        recorded_on: d,
+        value_num: 7 + ((w + ci) % 3),
+      });
+    }
+    await must(db.from("metric_entries").insert(entries).select("id"), "registros");
+
+    // Check-ins: uno revisado, uno enviado (por revisar) y, para algunos, uno pendiente
+    const qs = tpl!.questions as { key: string; label: string }[];
+    const make = async (daysAgo: number, status: "reviewed" | "submitted" | "pending") => {
+      const [ch] = await must(
+        db
+          .from("checkins")
+          .insert({
+            client_id: c.id,
+            template_id: tpl!.id,
+            due_on: iso(addDays(today, -daysAgo)),
+            status,
+            submitted_at: status === "pending" ? null : addDays(today, -daysAgo + 1).toISOString(),
+            reviewed_at: status === "reviewed" ? addDays(today, -daysAgo + 2).toISOString() : null,
+            reviewed_by: status === "reviewed" ? staff!.id : null,
+            staff_reply:
+              status === "reviewed"
+                ? "Buena semana. Subimos un poco la carga en sentadilla y mantenemos el resto. Sigue así."
+                : null,
+          })
+          .select("id"),
+        "check-in",
+      );
+      if (status !== "pending") {
+        const vals: Record<string, unknown> = {
+          week: 7 + (ci % 3),
+          workouts: 3,
+          food: 7,
+          pain: false,
+          notes: "Semana de exámenes, he dormido poco (dato de demo).",
+        };
+        await must(
+          db
+            .from("checkin_answers")
+            .insert(
+              qs.map((q) => ({
+                checkin_id: ch!.id,
+                client_id: c.id,
+                question_key: q.key,
+                question_label: q.label,
+                value: (vals[q.key] ?? null) as never,
+              })),
+            )
+            .select("checkin_id"),
+          "respuestas",
+        );
+      }
+    };
+    await make(14, "reviewed");
+    await make(7, "submitted");
+    if (ci % 2 === 0) await make(0, "pending");
+    console.log(`  ✓ seguimiento de ${c.profiles?.full_name}`);
+  }
+
+  const [field] = await must(
+    db
+      .from("custom_fields")
+      .insert({ key: "talla_zapatilla", label: "Talla de zapatilla", type: "number", client_editable: true })
+      .select("id"),
+    "campo",
+  );
+  await db.from("custom_fields").insert({
+    key: "objetivo_carrera",
+    label: "Carrera objetivo",
+    type: "select",
+    options: ["10K", "Media maratón", "Maratón", "HYROX"],
+    client_editable: false,
+  });
+  for (const c of clients ?? [])
+    await db.from("custom_field_values").insert({ client_id: c.id, field_id: field!.id, value: null });
 }
 
 main().catch((e) => {
