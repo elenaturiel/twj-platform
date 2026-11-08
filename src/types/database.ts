@@ -23,7 +23,47 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "audit_log": {
+            "affiliate_clicks": {
+                  Row: {
+                    "clicked_at": string,"client_id": string | null,"id": number,"link_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "clicked_at"?: string,"client_id"?: string | null,"id"?: never,"link_id": string
+                  }
+                  Update: {
+                    "clicked_at"?: string,"client_id"?: string | null,"id"?: never,"link_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "affiliate_clicks_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "affiliate_clicks_link_id_fkey"
+      columns: ["link_id"]
+isOneToOne: false
+      referencedRelation: "affiliate_links"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"affiliate_links": {
+                  Row: {
+                    "code": string | null,"created_at": string,"description": string | null,"id": string,"is_active": boolean,"label": string,"sort_order": number,"url": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "code"?: string | null,"created_at"?: string,"description"?: string | null,"id"?: string,"is_active"?: boolean,"label": string,"sort_order"?: number,"url": string
+                  }
+                  Update: {
+                    "code"?: string | null,"created_at"?: string,"description"?: string | null,"id"?: string,"is_active"?: boolean,"label"?: string,"sort_order"?: number,"url"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"audit_log": {
                   Row: {
                     "action": string,"actor_id": string | null,"client_id": string | null,"created_at": string,"entity": string,"entity_id": string | null,"id": number,"ip": unknown,"metadata": NonNullable<Json>
                   }
@@ -305,6 +345,32 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"day_notes": {
+                  Row: {
+                    "author_id": string,"body": string,"client_id": string,"created_at": string,"date": string,"id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "author_id": string,"body": string,"client_id": string,"created_at"?: string,"date": string,"id"?: string
+                  }
+                  Update: {
+                    "author_id"?: string,"body"?: string,"client_id"?: string,"created_at"?: string,"date"?: string,"id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "day_notes_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "day_notes_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"discount_redemptions": {
                   Row: {
                     "applied_at": string | null,"client_id": string,"created_at": string,"discount_id": string,"ends_on": string | null,"id": string,"reserved_until": string | null,"revoked_at": string | null,"snapshot": NonNullable<Json>,"status": string,"subscription_id": string | null
@@ -436,6 +502,26 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"foods": {
+                  Row: {
+                    "allergens": (string)[],"brand": string | null,"carbs_g": number | null,"category": string | null,"created_at": string,"fat_g": number | null,"fiber_g": number | null,"id": string,"is_active": boolean,"kcal": number | null,"name": string,"off_barcode": string | null,"pack_size_g": number | null,"price_cents": number | null,"protein_g": number | null,"salt_g": number | null,"source": string,"sugar_g": number | null,"supermarket_section": string,"unit_grams": number | null,"unit_name": string | null,"updated_at": string,"verified": boolean,"verified_at": string | null,"verified_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "allergens"?: (string)[],"brand"?: string | null,"carbs_g"?: number | null,"category"?: string | null,"created_at"?: string,"fat_g"?: number | null,"fiber_g"?: number | null,"id"?: string,"is_active"?: boolean,"kcal"?: number | null,"name": string,"off_barcode"?: string | null,"pack_size_g"?: number | null,"price_cents"?: number | null,"protein_g"?: number | null,"salt_g"?: number | null,"source"?: string,"sugar_g"?: number | null,"supermarket_section"?: string,"unit_grams"?: number | null,"unit_name"?: string | null,"updated_at"?: string,"verified"?: boolean,"verified_at"?: string | null,"verified_by"?: string | null
+                  }
+                  Update: {
+                    "allergens"?: (string)[],"brand"?: string | null,"carbs_g"?: number | null,"category"?: string | null,"created_at"?: string,"fat_g"?: number | null,"fiber_g"?: number | null,"id"?: string,"is_active"?: boolean,"kcal"?: number | null,"name"?: string,"off_barcode"?: string | null,"pack_size_g"?: number | null,"price_cents"?: number | null,"protein_g"?: number | null,"salt_g"?: number | null,"source"?: string,"sugar_g"?: number | null,"supermarket_section"?: string,"unit_grams"?: number | null,"unit_name"?: string | null,"updated_at"?: string,"verified"?: boolean,"verified_at"?: string | null,"verified_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "foods_verified_by_fkey"
+      columns: ["verified_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"guardian_authorizations": {
                   Row: {
@@ -582,6 +668,174 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"meal_change_requests": {
+                  Row: {
+                    "client_id": string,"created_at": string,"day_index": number | null,"id": string,"meal_id": string | null,"meal_plan_id": string | null,"reason": string,"resolved_at": string | null,"resolved_by": string | null,"response": string | null,"status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id": string,"created_at"?: string,"day_index"?: number | null,"id"?: string,"meal_id"?: string | null,"meal_plan_id"?: string | null,"reason": string,"resolved_at"?: string | null,"resolved_by"?: string | null,"response"?: string | null,"status"?: string
+                  }
+                  Update: {
+                    "client_id"?: string,"created_at"?: string,"day_index"?: number | null,"id"?: string,"meal_id"?: string | null,"meal_plan_id"?: string | null,"reason"?: string,"resolved_at"?: string | null,"resolved_by"?: string | null,"response"?: string | null,"status"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "meal_change_requests_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meal_change_requests_meal_id_fkey"
+      columns: ["meal_id"]
+isOneToOne: false
+      referencedRelation: "meals"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meal_change_requests_meal_plan_id_fkey"
+      columns: ["meal_plan_id"]
+isOneToOne: false
+      referencedRelation: "meal_plans"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meal_change_requests_resolved_by_fkey"
+      columns: ["resolved_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"meal_items": {
+                  Row: {
+                    "client_id": string | null,"food_id": string,"id": string,"meal_id": string,"notes": string | null,"quantity_g": number | null,"quantity_units": number | null,"sort_order": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id"?: string | null,"food_id": string,"id"?: string,"meal_id": string,"notes"?: string | null,"quantity_g"?: number | null,"quantity_units"?: number | null,"sort_order"?: number
+                  }
+                  Update: {
+                    "client_id"?: string | null,"food_id"?: string,"id"?: string,"meal_id"?: string,"notes"?: string | null,"quantity_g"?: number | null,"quantity_units"?: number | null,"sort_order"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "meal_items_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meal_items_food_id_fkey"
+      columns: ["food_id"]
+isOneToOne: false
+      referencedRelation: "foods"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meal_items_meal_id_fkey"
+      columns: ["meal_id"]
+isOneToOne: false
+      referencedRelation: "meals"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"meal_plan_days": {
+                  Row: {
+                    "client_id": string | null,"day_index": number,"id": string,"meal_plan_id": string,"notes": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id"?: string | null,"day_index": number,"id"?: string,"meal_plan_id": string,"notes"?: string | null
+                  }
+                  Update: {
+                    "client_id"?: string | null,"day_index"?: number,"id"?: string,"meal_plan_id"?: string,"notes"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "meal_plan_days_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meal_plan_days_meal_plan_id_fkey"
+      columns: ["meal_plan_id"]
+isOneToOne: false
+      referencedRelation: "meal_plans"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"meal_plans": {
+                  Row: {
+                    "client_id": string | null,"created_at": string,"id": string,"notes": string | null,"status": string,"template_id": string | null,"updated_at": string,"week_start": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id"?: string | null,"created_at"?: string,"id"?: string,"notes"?: string | null,"status"?: string,"template_id"?: string | null,"updated_at"?: string,"week_start"?: string | null
+                  }
+                  Update: {
+                    "client_id"?: string | null,"created_at"?: string,"id"?: string,"notes"?: string | null,"status"?: string,"template_id"?: string | null,"updated_at"?: string,"week_start"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "meal_plans_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meal_plans_template_id_fkey"
+      columns: ["template_id"]
+isOneToOne: false
+      referencedRelation: "meal_templates"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"meal_templates": {
+                  Row: {
+                    "created_at": string,"created_by": string | null,"description": string | null,"id": string,"kcal_target": number | null,"name": string,"tags": (string)[]
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"kcal_target"?: number | null,"name": string,"tags"?: (string)[]
+                  }
+                  Update: {
+                    "created_at"?: string,"created_by"?: string | null,"description"?: string | null,"id"?: string,"kcal_target"?: number | null,"name"?: string,"tags"?: (string)[]
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "meal_templates_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"meals": {
+                  Row: {
+                    "client_id": string | null,"day_id": string,"id": string,"notes": string | null,"slot": string,"sort_order": number,"title": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id"?: string | null,"day_id": string,"id"?: string,"notes"?: string | null,"slot": string,"sort_order"?: number,"title"?: string | null
+                  }
+                  Update: {
+                    "client_id"?: string | null,"day_id"?: string,"id"?: string,"notes"?: string | null,"slot"?: string,"sort_order"?: number,"title"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "meals_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "meals_day_id_fkey"
+      columns: ["day_id"]
+isOneToOne: false
+      referencedRelation: "meal_plan_days"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"message_templates": {
                   Row: {
@@ -1161,6 +1415,64 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"shopping_list_items": {
+                  Row: {
+                    "checked": boolean,"client_id": string,"estimated_cents": number | null,"food_id": string | null,"id": string,"list_id": string,"name": string,"packs": number | null,"quantity_g": number | null,"section": string,"units": number | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "checked"?: boolean,"client_id": string,"estimated_cents"?: number | null,"food_id"?: string | null,"id"?: string,"list_id": string,"name": string,"packs"?: number | null,"quantity_g"?: number | null,"section": string,"units"?: number | null
+                  }
+                  Update: {
+                    "checked"?: boolean,"client_id"?: string,"estimated_cents"?: number | null,"food_id"?: string | null,"id"?: string,"list_id"?: string,"name"?: string,"packs"?: number | null,"quantity_g"?: number | null,"section"?: string,"units"?: number | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "shopping_list_items_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "shopping_list_items_food_id_fkey"
+      columns: ["food_id"]
+isOneToOne: false
+      referencedRelation: "foods"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "shopping_list_items_list_id_fkey"
+      columns: ["list_id"]
+isOneToOne: false
+      referencedRelation: "shopping_lists"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"shopping_lists": {
+                  Row: {
+                    "client_id": string,"generated_at": string,"id": string,"meal_plan_id": string,"persons": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id": string,"generated_at"?: string,"id"?: string,"meal_plan_id": string,"persons"?: number
+                  }
+                  Update: {
+                    "client_id"?: string,"generated_at"?: string,"id"?: string,"meal_plan_id"?: string,"persons"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "shopping_lists_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "shopping_lists_meal_plan_id_fkey"
+      columns: ["meal_plan_id"]
+isOneToOne: true
+      referencedRelation: "meal_plans"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"squad_members": {
                   Row: {
                     "client_id": string,"joined_at": string,"left_at": string | null,"squad_id": string
@@ -1491,6 +1803,9 @@ isOneToOne: false
                            },
 "copy_block":
 { Args: { "p_block": string,"p_client": string,"p_name"?: string,"p_starts_on": string,"p_template": string }; Returns: string
+                           },
+"copy_meal_plan":
+{ Args: { "p_client": string,"p_plan": string,"p_template": string,"p_week_start": string }; Returns: string
                            },
 "copy_week":
 { Args: { "p_as_deload"?: boolean,"p_week": string }; Returns: string

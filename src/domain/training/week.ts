@@ -23,3 +23,8 @@ export function sessionDate(startsOn: string | null, weekIndex: number, dayIndex
 
 export const DAY_NAMES = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
 export const DAY_SHORT = ["L", "M", "X", "J", "V", "S", "D"];
+
+/** Lunes de la semana de una fecha (YYYY-MM-DD). */
+export function mondayOf(date: string): string {
+  return addDays(date, -weekdayMondayFirst(date));
+}

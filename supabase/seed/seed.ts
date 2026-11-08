@@ -9,6 +9,7 @@
  */
 import { createClient } from "@supabase/supabase-js";
 import type { Database, Json } from "../../src/types/database";
+import { offToFood, type OffProduct } from "../../src/domain/nutrition/off";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SECRET_KEY;
@@ -207,6 +208,7 @@ async function main() {
   else await seedPhase1();
   await seedTraining();
   await seedTracking();
+  await seedNutrition();
   console.log(`\nListo. Contraseña de todos los usuarios: ${PASSWORD}`);
 }
 
@@ -917,6 +919,238 @@ async function seedTracking() {
   });
   for (const c of clients ?? [])
     await db.from("custom_field_values").insert({ client_id: c.id, field_id: field!.id, value: null });
+}
+
+// Alimentos reales de Open Food Facts (datos colaborativos → entran SIN VERIFICAR, sin precio).
+const OFF_FOODS: { term: string; section: string; match: RegExp }[] = [
+  { term: "copos de avena", section: "Despensa", match: /avena/i },
+  { term: "yogur natural", section: "Lácteos y huevos", match: /yogur|griego/i },
+  { term: "huevos camperos", section: "Lácteos y huevos", match: /^huevos?\b/i },
+  { term: "leche semidesnatada", section: "Lácteos y huevos", match: /^leche/i },
+  { term: "pechuga de pollo", section: "Carne y pescado", match: /pechuga.*pollo/i },
+  { term: "salmon ahumado", section: "Carne y pescado", match: /salm[oó]n/i },
+  { term: "atun al natural", section: "Conservas", match: /at[uú]n/i },
+  { term: "arroz integral", section: "Despensa", match: /^arroz/i },
+  { term: "lentejas cocidas", section: "Conservas", match: /lentejas/i },
+  { term: "pan integral", section: "Panadería", match: /^pan\b/i },
+  { term: "aceite de oliva virgen extra", section: "Despensa", match: /aceite.*oliva/i },
+  { term: "crema de cacahuete", section: "Despensa", match: /cacahuete/i },
+  { term: "queso fresco batido", section: "Lácteos y huevos", match: /queso/i },
+  { term: "macarrones integrales", section: "Despensa", match: /macarr|espagu|pasta/i },
+];
+
+async function offFood(term: string, match: RegExp): Promise<ReturnType<typeof offToFood> | null> {
+  const fields = "code,product_name,product_name_es,brands,product_quantity,nutriments,allergens_tags";
+  const u = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(term)}&search_simple=1&action=process&json=1&page_size=40&countries_tags_en=spain&fields=${fields}`;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    if (attempt) await new Promise((r) => setTimeout(r, 15_000)); // OFF limita/corta a menudo: espera y reintenta
+    try {
+      const res = await fetch(u, {
+        headers: { "User-Agent": "TWJ-App/1.0 (seed de desarrollo)" },
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!res.ok) continue;
+      const json = (await res.json()) as { products?: OffProduct[] };
+      if (!json.products?.length) continue;
+      // Primer producto cuyo nombre encaja y con los 4 macros informados
+      const p = json.products.find((x) => {
+        const f = offToFood(x);
+        return match.test(f.name) && f.kcal != null && f.protein_g != null && f.carbs_g != null && f.fat_g != null;
+      });
+      return p ? offToFood(p) : null;
+    } catch {
+      // timeout o respuesta no JSON → reintenta
+    }
+  }
+  return null;
+}
+
+async function seedNutrition() {
+  const { count } = await db.from("meal_plans").select("id", { count: "exact", head: true });
+  if (count) return console.log("Fase 4 ya cargada.");
+  console.log("→ Nutrición (alimentos de Open Food Facts, sin verificar)");
+  const foods: { id: string; term: string }[] = [];
+  for (const f of OFF_FOODS) {
+    const food = await offFood(f.term, f.match);
+    if (!food) {
+      console.log(`  · sin resultado en OFF para «${f.term}»`);
+      continue;
+    }
+    const { data: existing } = food.off_barcode
+      ? await db.from("foods").select("id").eq("off_barcode", food.off_barcode).maybeSingle()
+      : { data: null };
+    const row =
+      existing ??
+      (await must(
+        db
+          .from("foods")
+          .insert({ ...food, supermarket_section: f.section })
+          .select("id")
+          .single(),
+        `alimento ${f.term}`,
+      ));
+    foods.push({ id: row.id, term: f.term });
+    await new Promise((r) => setTimeout(r, 6500)); // OFF limita a ~10 búsquedas/min
+  }
+  if (foods.length < 4) return console.log("  ! OFF no respondió: no se crean menús de demo.");
+  const have = new Set(foods.map((f) => f.term));
+  const pick = (term: string) => foods.find((f) => f.term === term)!.id;
+
+  // Plantilla de comidas por franja (cantidades orientativas de demo, en gramos)
+  type Item = [string, number];
+  const DAY: Record<"breakfast" | "lunch" | "snack" | "dinner", { title: string; items: Item[] }[]> = {
+    breakfast: [
+      {
+        title: "Avena con yogur",
+        items: [
+          ["copos de avena", 60],
+          ["yogur natural", 125],
+          ["crema de cacahuete", 15],
+        ],
+      },
+      {
+        title: "Tostadas con huevo",
+        items: [
+          ["pan integral", 80],
+          ["huevos camperos", 120],
+          ["aceite de oliva virgen extra", 5],
+        ],
+      },
+    ],
+    lunch: [
+      {
+        title: "Pollo con arroz",
+        items: [
+          ["pechuga de pollo", 150],
+          ["arroz integral", 80],
+          ["aceite de oliva virgen extra", 10],
+        ],
+      },
+      {
+        title: "Lentejas",
+        items: [
+          ["lentejas cocidas", 250],
+          ["pan integral", 40],
+          ["aceite de oliva virgen extra", 10],
+        ],
+      },
+      {
+        title: "Pasta con atún",
+        items: [
+          ["macarrones integrales", 90],
+          ["atun al natural", 80],
+          ["aceite de oliva virgen extra", 10],
+        ],
+      },
+    ],
+    snack: [
+      {
+        title: "Merienda",
+        items: [
+          ["queso fresco batido", 200],
+          ["copos de avena", 30],
+        ],
+      },
+    ],
+    dinner: [
+      {
+        title: "Salmón con pan",
+        items: [
+          ["salmon ahumado", 100],
+          ["pan integral", 60],
+        ],
+      },
+      {
+        title: "Tortilla",
+        items: [
+          ["huevos camperos", 120],
+          ["pan integral", 40],
+          ["aceite de oliva virgen extra", 5],
+        ],
+      },
+    ],
+  };
+
+  const { data: staff } = await db.from("profiles").select("id").eq("role", "owner").single();
+  const { data: clients } = await db
+    .from("clients")
+    .select("id, profiles(full_name), plans(key)")
+    .not("onboarding_completed_at", "is", null);
+  const monday = iso(lastMonday(new Date()));
+
+  for (const [ci, c] of (clients ?? []).entries()) {
+    if (!c.plans?.key || c.plans.key === "rookie") continue;
+    const plan = await must(
+      db
+        .from("meal_plans")
+        .insert({
+          client_id: c.id,
+          week_start: monday,
+          status: "published",
+          notes: "Menú de demo (alimentos sin verificar).",
+        })
+        .select("id")
+        .single(),
+      "menú",
+    );
+    let firstMeal: string | null = null;
+    for (let d = 0; d < 7; d++) {
+      const day = await must(
+        db
+          .from("meal_plan_days")
+          .insert({ meal_plan_id: plan.id, client_id: c.id, day_index: d })
+          .select("id")
+          .single(),
+        "día",
+      );
+      for (const [si, slot] of (["breakfast", "lunch", "snack", "dinner"] as const).entries()) {
+        const opts = DAY[slot];
+        const o = opts[(d + ci) % opts.length]!;
+        const items = o.items.filter(([t]) => have.has(t));
+        if (!items.length) continue;
+        const meal = await must(
+          db
+            .from("meals")
+            .insert({ day_id: day.id, client_id: c.id, slot, title: o.title, sort_order: si })
+            .select("id")
+            .single(),
+          "comida",
+        );
+        firstMeal ??= meal.id;
+        await must(
+          db
+            .from("meal_items")
+            .insert(
+              items.map(([t, g], k) => ({
+                meal_id: meal.id,
+                client_id: c.id,
+                food_id: pick(t),
+                quantity_g: g,
+                sort_order: k,
+              })),
+            )
+            .select("id"),
+          "alimentos de la comida",
+        );
+      }
+    }
+    if (ci % 2 === 0)
+      await db.from("meal_change_requests").insert({
+        client_id: c.id,
+        meal_plan_id: plan.id,
+        meal_id: firstMeal,
+        day_index: 0,
+        reason: "El lunes desayuno fuera, ¿me lo cambias por algo que pueda llevar? (demo)",
+      });
+    if (staff)
+      await db.from("day_notes").insert({
+        client_id: c.id,
+        date: monday,
+        author_id: staff.id,
+        body: "Bebe 2 L de agua hoy y prioriza la proteína en la cena. (demo)",
+      });
+    console.log(`  ✓ menú de ${c.profiles?.full_name}`);
+  }
 }
 
 main().catch((e) => {

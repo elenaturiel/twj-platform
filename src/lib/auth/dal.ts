@@ -151,3 +151,31 @@ export async function requireScope(scope: StaffScope): Promise<Viewer> {
   if (!data) redirect("/panel?sin-permiso=" + scope);
   return viewer;
 }
+
+/** ¿El plan del cliente incluye esta función? (con excepciones por cliente) */
+export async function clientHasFeature(clientId: string, feature: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("has_feature", { p_client_id: clientId, p_feature: feature });
+  return Boolean(data);
+}
+
+/** Plan más barato que incluye una función (para el aviso «Esto va en el plan…»). */
+export async function cheapestPlanWith(feature: string): Promise<{ key: string; name: string } | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("public_plan_features")
+    .select("enabled, feature_key, plan_id")
+    .eq("feature_key", feature)
+    .eq("enabled", true);
+  if (!data?.length) return null;
+  const { data: plans } = await supabase
+    .from("public_plans")
+    .select("id, key, name, sort_order")
+    .in(
+      "id",
+      data.map((d) => d.plan_id!),
+    )
+    .order("sort_order")
+    .limit(1);
+  return plans?.[0] ? { key: plans[0].key!, name: plans[0].name! } : null;
+}
