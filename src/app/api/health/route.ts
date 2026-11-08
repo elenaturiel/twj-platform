@@ -48,8 +48,21 @@ export async function GET() {
     }
   }
 
+  // Solo NOMBRES de variables parecidas (para detectar erratas), nunca valores
+  const similarNames = Object.keys(process.env)
+    .filter((k) => /supabase|cron|payments|stripe|resend/i.test(k))
+    .map((k) => JSON.stringify(k))
+    .sort();
+
   return NextResponse.json(
-    { env, database, vercelEnv: process.env.VERCEL_ENV ?? null },
+    {
+      env,
+      database,
+      similarNames,
+      vercelEnv: process.env.VERCEL_ENV ?? null,
+      branch: process.env.VERCEL_GIT_COMMIT_REF ?? null,
+      commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
+    },
     { headers: { "Cache-Control": "no-store" } },
   );
 }
