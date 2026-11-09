@@ -4,6 +4,7 @@ import { getClientContext, requireViewer } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { todayInMadrid } from "@/lib/dates";
 import { Logo } from "@/components/twj/logo";
+import { UserMenu } from "@/components/twj/user-menu";
 import { OnboardingWizard, type HealthQuestionnaire } from "@/features/onboarding/onboarding-wizard";
 
 export const metadata: Metadata = { title: "Tu ficha" };
@@ -22,7 +23,10 @@ export default async function OnboardingPage() {
 
   return (
     <div className="mx-auto w-full max-w-lg px-4 py-6">
-      <Logo compact className="text-2xl" />
+      <div className="flex items-center justify-between">
+        <Logo compact className="text-2xl" />
+        <UserMenu name={viewer.fullName} email={viewer.email} />
+      </div>
       <div className="mt-6">
         <OnboardingWizard
           firstName={viewer.fullName.split(" ")[0] || "crack"}

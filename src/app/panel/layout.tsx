@@ -4,6 +4,7 @@ import { requireStaff } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { Logo } from "@/components/twj/logo";
 import { ThemeToggle } from "@/components/twj/theme-toggle";
+import { UserMenu } from "@/components/twj/user-menu";
 import { signOut } from "@/features/auth/actions";
 import { PanelBottomNav, PanelSideNav } from "./panel-nav";
 
@@ -67,6 +68,14 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
               ) : null}
             </Link>
             <ThemeToggle />
+            <UserMenu
+              name={viewer.fullName}
+              email={viewer.email}
+              links={[
+                { href: "/panel/ajustes", label: "Ajustes" },
+                { href: "/panel/ajustes/notificaciones", label: "Mis avisos" },
+              ]}
+            />
           </div>
         </header>
         <main className="w-full flex-1 px-4 pt-6 pb-24 lg:px-8 lg:pb-10">{children}</main>

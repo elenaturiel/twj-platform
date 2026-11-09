@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { requireClientWithAccess } from "@/lib/auth/dal";
 import { Logo } from "@/components/twj/logo";
 import { ThemeToggle } from "@/components/twj/theme-toggle";
+import { UserMenu } from "@/components/twj/user-menu";
 import { formatDate } from "@/features/clients/ui";
 import { OutboxSync } from "@/features/training/ui/outbox-sync";
 import { ClientBottomNav } from "./client-nav";
@@ -54,6 +55,15 @@ export default async function ClientLayout({ children }: LayoutProps<"/">) {
               {badge(unread ?? 0)}
             </Link>
             <ThemeToggle />
+            <UserMenu
+              name={ctx.viewer.fullName}
+              email={ctx.viewer.email}
+              links={[
+                { href: "/perfil", label: "Mi ficha" },
+                { href: "/perfil/plan", label: "Mi plan y pagos" },
+                { href: "/perfil/notificaciones", label: "Avisos" },
+              ]}
+            />
           </div>
         </div>
         {ctx.access.kind === "ok" && ctx.access.warning ? (
