@@ -43,16 +43,22 @@ pnpm dev                 # http://localhost:3000
 - Los emails de la app (bienvenida, avisos) **no se envían** sin `RESEND_API_KEY`: salen en la consola como `[email:skip]`.
 - Studio de Supabase: http://127.0.0.1:54323.
 
-### Qué probar en la Fase 1
+### Qué probar (todas las fases)
 
-1. **Alta + pago**: `/empezar` → «Voy MVP» → rellena la cuenta, marca «universitario», «Anual» y los consentimientos. El precio se recalcula en vivo. «Ir al pago» → simulador → «Pagar (simulado)» → onboarding → `/hoy`.
-2. **Sin pago no hay acceso**: crea una cuenta, sal del simulador sin pagar e intenta ir a `/hoy`. Te manda a `/estado`.
-3. **Onboarding**: entra como `cliente1`. Si pones una fecha de nacimiento de menor, aparece el paso del tutor. El email al tutor sale en la consola y el enlace es `/tutor/<token>`.
-4. **Avisos de cambios**: como `cliente2`, cambia algo en `/perfil`. Como `jaime`, el aviso aparece en la campana y en «Cambios recientes», con el valor anterior y el nuevo.
-5. **Cobro manual**: como `jaime` → Clientes → Nuevo cliente (cobro manual) → «Registrar primer pago y activar». El periodo se calcula solo.
-6. **Planes y descuentos**: `/panel/planes`. Cambia un precio, activa o desactiva funciones por plan y edita descuentos. `/empezar` cambia al momento.
-7. **Carné universitario**: como cliente con descuento de estudiante → «Mi plan» → subir carné. Como `jaime` → Pendientes → Ver / Aprobar / Rechazar.
-8. **Crons**: `curl -X POST -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/cron/billing` (también `notifications` y `digest`).
+Entra con los usuarios de demo. Cliente con todo: `cliente4` (Diego, MVP). Staff: `jaime`.
+
+1. **Alta y pago**: `/empezar` → elige plan → cuenta → simulador de pago → ficha → `/hoy`. Sin pagar no hay acceso.
+2. **Cobro manual y planes**: Panel → Clientes → Nuevo cliente (cobro manual). `/panel/planes` para precios, funciones y descuentos.
+3. **Entreno**: `cliente4` → Entreno → sesión de hoy → registra series (funciona sin conexión) → Historial y Récords. Jaime: ficha del cliente → Entreno (editor de bloques) y Biblioteca → Importar Excel.
+4. **Seguimiento**: Progreso (métricas, fotos privadas, check-in). Jaime: Seguimiento y Pendientes → responder check-in (texto y nota de voz).
+5. **Comida**: menú de la semana, «Cambiar», notas del día, lista de la compra por personas, suplementos. Jaime: ficha → Nutrición y Biblioteca → Alimentos (buscar en Open Food Facts).
+6. **Agenda**: `/agenda` → Reservar (salta al primer día con huecos) → cambiar hora / cancelar (devuelve el crédito hasta 12 h antes) → comprar sesión extra (simulador). Jaime: Agenda (semana, resumen con 3 objetivos) y Disponibilidad.
+7. **Chat**: icono de mensaje arriba (cliente) ↔ Panel → Mensajes. Llega en directo; fotos, vídeo y notas de voz.
+8. **Avisos**: campana; Perfil → Avisos (email/push por tipo). Jaime: Ajustes → Mis avisos y Plantillas de email.
+9. **Retos y medallas**: `/retos` (apuntarse, clasificación), `/medallas`, racha en `/hoy`, `/squad`. Jaime: Retos. Para recalcular a mano: cron `engagement`.
+10. **HYROX**: `/hyrox` (3 pasos) → Panel → HYROX (embudo, CSV, email a la lista).
+11. **Negocio y RGPD**: Panel → Negocio (MRR, CSV). Cliente: Más → Privacidad y datos (descargar, pedir borrado). Jaime: Ajustes → Privacidad (RGPD), Equipo y permisos, Textos legales.
+12. **Crons a mano**: `curl -X POST -H "Authorization: Bearer $CRON_SECRET" localhost:3000/api/cron/<job>` con `billing`, `checkins`, `agenda`, `engagement`, `notifications`, `digest`, `hyrox`, `privacy`.
 
 ## 2. Comandos
 
@@ -123,12 +129,15 @@ tests/e2e/          Playwright
 3. Si hay un registro `CAA`, debe permitir `letsencrypt.org`.
 4. Como la web actual ya está en Vercel, si el dominio se gestiona desde el mismo equipo de Vercel basta con añadir el subdominio al proyecto nuevo.
 
-### 4.5 Google (login y, en la Fase 5, Calendar/Meet)
+### 4.5 Google (login, y Calendar/Meet para la agenda)
 
-1. Google Cloud Console → crea un proyecto → **OAuth consent screen** (External, en español, con logo y dominio `trainwithjaime.es`).
-2. **Credentials → OAuth client ID** (Web): en «Authorized redirect URI» pon `https://<ref>.supabase.co/auth/v1/callback`.
-3. Pega el Client ID y el Secret en Supabase → Auth → Providers → Google.
-4. En la Fase 5 se añade el scope de Calendar. Como Jaime usa una cuenta @gmail, la app OAuth tiene que estar **en producción**; en modo «testing» el token caduca a los 7 días.
+1. Google Cloud Console → crea un proyecto → **OAuth consent screen** (External, en español, con logo y dominio `trainwithjaime.es`). Activa la **Google Calendar API**.
+2. **Credentials → OAuth client ID** (Web). «Authorized redirect URIs»:
+   - `https://<ref>.supabase.co/auth/v1/callback` (login con Google)
+   - `https://app.trainwithjaime.es/api/google/callback` (Calendar/Meet de Jaime)
+3. Login: pega el Client ID y el Secret en Supabase → Auth → Providers → Google.
+4. Agenda: en Vercel, `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` (los mismos). Luego Jaime entra en Panel → Agenda → Disponibilidad → «Conectar Google Calendar». El token se guarda cifrado en Supabase Vault.
+5. Como Jaime usa una cuenta @gmail, la app OAuth tiene que estar **en producción**; en modo «testing» el token caduca a los 7 días. Sin Google, la agenda funciona igual con el enlace fijo de Meet que se pone en Disponibilidad.
 
 ### 4.6 Web Push (Fase 6)
 
@@ -154,9 +163,18 @@ revoke all on function public.call_cron(text) from public, anon, authenticated;
 select cron.schedule('twj-notifications', '* * * * *',  $$ select public.call_cron('notifications') $$); -- cola de email/push
 select cron.schedule('twj-billing',       '0 7 * * *',  $$ select public.call_cron('billing') $$);       -- 08:00/09:00 Madrid
 select cron.schedule('twj-digest',        '0 19 * * *', $$ select public.call_cron('digest') $$);        -- resumen diario
+select cron.schedule('twj-checkins',      '30 6 * * *', $$ select public.call_cron('checkins') $$);      -- check-ins del día
+select cron.schedule('twj-agenda',        '*/15 * * * *', $$ select public.call_cron('agenda') $$);     -- recordatorios 24 h / 1 h y créditos del mes
+select cron.schedule('twj-engagement',    '15 3 * * *', $$ select public.call_cron('engagement') $$);   -- rachas, retos y medallas
+select cron.schedule('twj-hyrox',         '* * * * *',  $$ select public.call_cron('hyrox') $$);         -- emails masivos HYROX por tandas
+select cron.schedule('twj-privacy',       '0 4 * * 1',  $$ select public.call_cron('privacy') $$);       -- anonimiza bajas con plazo vencido
 ```
 
 Alternativa: Vercel Cron. En el plan Hobby solo permite tareas diarias, así que la cola de notificaciones necesita pg_cron o Vercel Pro.
+
+### 4.7 bis · Formulario HYROX de la web actual
+
+La web (www.trainwithjaime.es/hyrox) ya manda sus datos a su propio `/api/hyrox`. Para que lleguen al panel de la app basta con **cambiar la URL del `fetch`** a `https://app.trainwithjaime.es/api/public/hyrox-waitlist` (mismo JSON: `action`, `id`, `ub`, `nivel`, `cuando`, `email`, `consentimiento`, `website`, `utm_*`). Otra opción, sin tocar el formulario: que el `/api/hyrox` de la web reenvíe el mismo cuerpo a esa URL. Los orígenes permitidos (CORS) están en el ajuste `hyrox.allowed_origins`. Banner para incrustar: `<iframe src="https://app.trainwithjaime.es/embed/hyrox-banner?ub=home" style="width:100%;height:180px;border:0"></iframe>`.
 
 ### 4.8 Variables de entorno (resumen)
 
@@ -182,6 +200,10 @@ Ver [`.env.example`](.env.example). En Vercel, configura las de **Production** y
 - [ ] DPA aceptados con Supabase, Vercel, Stripe, Resend y Google.
 - [ ] Marca definitiva: hex, tipografías, logo SVG e iconos de la PWA (`TODO(marca)`).
 - [ ] Confirmar con la gestoría: IVA incluido, quién factura y si hay que adaptarse a **VERI\*FACTU** (2027).
+- [ ] Google Calendar conectado (Disponibilidad) o enlace fijo de Meet puesto; horario semanal revisado.
+- [ ] VAPID (push) generadas y puestas en Vercel.
+- [ ] Formulario HYROX de la web apuntando al endpoint de la app (§4.7 bis).
+- [ ] Borrar los datos de demo (usuarios `@twj.local`, retos y lista HYROX «demo») si se reutiliza el proyecto de staging.
 
 ## 6. App Store (Fase 9) — puntos a vigilar desde ya
 
@@ -196,14 +218,14 @@ Ver [`.env.example`](.env.example). En Vercel, configura las de **Production** y
 
 ## 7. Estado por fases
 
-| Fase                                                                                                                                                           | Estado                                                         |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| 1 · Base, auth, roles, RLS, alta + pago (Stripe/manual), planes, funciones, descuentos, onboarding, avisos de cambios, panel de clientes, app del cliente base | ✅ (pendiente: probar con Stripe test real cuando haya claves) |
-| 2 · Ejercicios, bloques/sesiones (gym, funcional, running, HYROX), importador Excel, registro de entrenos                                                      | ⏳                                                             |
-| 3 · Métricas, progreso, fotos, check-ins                                                                                                                       | ⏳                                                             |
-| 4 · Nutrición, alimentos (Open Food Facts), menú, lista de la compra, HSN                                                                                      | ⏳                                                             |
-| 5 · Agenda, créditos, Google Meet                                                                                                                              | ⏳                                                             |
-| 6 · Chat, WhatsApp, push y email                                                                                                                               | ⏳                                                             |
-| 7 · Retos, rachas, medallas, Squad, lista HYROX                                                                                                                | ⏳                                                             |
-| 8 · Negocio, RGPD completo, pulido, producción                                                                                                                 | ⏳                                                             |
-| 9 · Capacitor/App Store, Garmin/Strava/Apple Salud                                                                                                             | ⏳                                                             |
+| Fase                                                                                                                | Estado                                                |
+| ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| 1 · Base, auth, roles, RLS, alta + pago (Stripe/manual), planes, descuentos, onboarding, panel y app base           | ✅ (falta probar con claves reales de Stripe)         |
+| 2 · Ejercicios, bloques/sesiones (gym, funcional, running, HYROX), importador Excel, registro de entrenos y récords | ✅ (falta probar con el Excel real de Jaime)          |
+| 3 · Métricas, progreso, fotos privadas, check-ins, campos personalizados                                            | ✅ (preguntas del check-in: TODO de Jaime)            |
+| 4 · Nutrición, alimentos (Open Food Facts), menú semanal, cambios, lista de la compra, suplementos                  | ✅ (código HSN: TODO)                                 |
+| 5 · Agenda, créditos, videollamadas, Google Calendar/Meet, sesiones extra                                           | ✅ (falta conectar Google)                            |
+| 6 · Chat en directo, avisos email/push, preferencias, plantillas                                                    | ✅ (faltan claves de Resend y VAPID)                  |
+| 7 · Retos, rachas, medallas, squad, lista HYROX                                                                     | ✅ (falta cambiar la URL en la web)                   |
+| 8 · Negocio, RGPD, equipo, textos legales, pulido                                                                   | ✅ (textos legales: los debe redactar un profesional) |
+| 9 · Capacitor/App Store, Garmin/Strava/Apple Salud                                                                  | ⏳                                                    |
