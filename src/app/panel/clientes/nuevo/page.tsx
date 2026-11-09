@@ -5,8 +5,10 @@ import { NewClientForm } from "@/features/clients/new-client-form";
 
 export const metadata: Metadata = { title: "Nuevo cliente" };
 
-export default async function NewClientPage() {
+export default async function NewClientPage({ searchParams }: PageProps<"/panel/clientes/nuevo">) {
   await requireScope("clients");
+  const sp = await searchParams;
+  const str = (v: string | string[] | undefined) => (typeof v === "string" ? v : undefined);
   const supabase = await createClient();
   const { data: plans } = await supabase
     .from("plans")
@@ -17,6 +19,13 @@ export default async function NewClientPage() {
     <div className="mx-auto max-w-6xl space-y-5">
       <h1 className="text-3xl font-extrabold">Nuevo cliente</h1>
       <NewClientForm
+        defaults={{
+          name: str(sp.nombre),
+          email: str(sp.email),
+          phone: str(sp.telefono),
+          planKey: str(sp.plan),
+          leadId: str(sp.solicitud),
+        }}
         plans={(plans ?? []).map((p) => ({
           key: p.key,
           name: p.name,

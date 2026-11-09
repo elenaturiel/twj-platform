@@ -11,5 +11,7 @@ export const getPublicSettings = cache(async () => {
     whatsappNumber: (map.get("contact.whatsapp_number") as string | undefined) ?? "",
     contactEmail: (map.get("contact.email") as string | undefined) ?? "",
     extraSessionPriceCents: (map.get("billing.extra_session_price_cents") as number | undefined) ?? null,
+    // Sin el ajuste, cerrado: solo entra quien acepte el equipo
+    publicSignup: map.get("access.public_signup") === true,
   };
 });

@@ -9,7 +9,10 @@ test("Jaime da de alta un cliente manual y registra su primer pago por Bizum", a
   await page.getByLabel("Nombre y apellidos").fill("Cliente Bizum");
   await page.getByLabel("Email").fill(uniqueEmail("bizum"));
   await page.getByLabel("Plan").selectOption("rookie");
-  await page.getByRole("button", { name: "Crear e invitar" }).click();
+  await page.getByRole("button", { name: "Crear y generar acceso" }).click();
+  // Primero el enlace de acceso para mandárselo; luego, a su ficha
+  await expect(page.getByText(/\/auth\/confirm\?token_hash=/)).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("button", { name: "Ir a su ficha para registrar el pago" }).click();
 
   await expect(page).toHaveURL(/\/panel\/clientes\/.+\/pagos/, { timeout: 20_000 });
   await expect(page.getByText("Pendiente de pago").first()).toBeVisible();

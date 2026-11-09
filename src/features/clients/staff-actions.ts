@@ -20,6 +20,62 @@ import { buildSignupQuote } from "@/features/billing/quote.server";
 
 export type StaffResult = { ok: true; message?: string } | { ok: false; error: string };
 
+/**
+ * Enlace de acceso de un solo uso (no depende del email: Jaime lo puede mandar por
+ * WhatsApp). "invite" crea la cuenta; "recovery" sirve para reenviar el acceso o
+ * que alguien ponga contraseña nueva. Si Resend está configurado, también va por email.
+ */
+async function accessLink(
+  kind: "invite" | "recovery",
+  email: string,
+  origin: string,
+  fullName?: string,
+): Promise<{ link: string; userId: string } | { error: string }> {
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.generateLink(
+    kind === "invite"
+      ? { type: "invite", email, options: { data: { full_name: fullName ?? "" } } }
+      : { type: "recovery", email },
+  );
+  if (error || !data.user || !data.properties?.hashed_token) {
+    return {
+      error: error?.message?.toLowerCase().includes("already")
+        ? "Ya existe una cuenta con ese email."
+        : "No se ha podido generar el acceso.",
+    };
+  }
+  const link = `${origin}/auth/confirm?token_hash=${data.properties.hashed_token}&type=${kind}&next=/auth/nueva-contrasena`;
+  await sendEmail({
+    to: email,
+    subject: kind === "invite" ? "Tu acceso a Train with Jaime" : "Entra en Train with Jaime",
+    preview: "Pon tu contraseña y empieza",
+    paragraphs: [
+      `Hola${fullName ? ` ${fullName.split(" ")[0]}` : ""}:`,
+      "Aquí tienes tu acceso a la app de Train with Jaime. Pulsa el botón, elige tu contraseña y listo.",
+      "El enlace es personal y de un solo uso.",
+    ],
+    cta: { label: "Entrar y poner mi contraseña", href: link },
+  }).catch(() => null);
+  return { link, userId: data.user.id };
+}
+
+/** Nuevo enlace de acceso para un cliente (por si no le llegó o no lo encuentra). */
+export async function getAccessLink(
+  clientId: string,
+): Promise<{ ok: true; link: string; phone: string | null } | { ok: false; error: string }> {
+  await requireScope("clients");
+  const admin = createAdminClient();
+  const { data: c } = await admin
+    .from("clients")
+    .select("profiles(email, full_name, phone)")
+    .eq("id", clientId)
+    .single();
+  const email = c?.profiles?.email;
+  if (!email) return { ok: false, error: "Cliente sin email." };
+  const r = await accessLink("recovery", String(email), await requestOrigin(), c.profiles?.full_name);
+  return "error" in r ? { ok: false, error: r.error } : { ok: true, link: r.link, phone: c.profiles?.phone ?? null };
+}
+
 const newClientSchema = z.object({
   fullName: z.string().trim().min(2).max(120),
   email: z.email().trim().toLowerCase(),
@@ -30,6 +86,8 @@ const newClientSchema = z.object({
   customAmountEuros: z.coerce.number().min(0).max(5000).optional(),
   studentClaim: z.boolean().default(false),
   modalities: z.array(z.enum(["gym", "functional", "running", "hyrox"])).default([]),
+  phone: z.string().trim().max(30).optional(),
+  leadId: z.uuid().optional(),
 });
 
 /**
@@ -38,7 +96,7 @@ const newClientSchema = z.object({
  */
 export async function createClientByStaff(
   input: z.input<typeof newClientSchema>,
-): Promise<StaffResult & { clientId?: string }> {
+): Promise<StaffResult & { clientId?: string; accessLink?: string }> {
   const viewer = await requireScope("clients");
   const parsed = newClientSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Revisa los datos del cliente." };
@@ -55,23 +113,14 @@ export async function createClientByStaff(
   if (plan.price_cents === null && d.customAmountEuros === undefined)
     return { ok: false, error: "Indica el importe pactado." };
 
-  const { data: invited, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(d.email, {
-    data: { full_name: d.fullName },
-    redirectTo: `${origin}/auth/callback?next=/auth/nueva-contrasena`,
-  });
-  if (inviteErr || !invited.user) {
-    return {
-      ok: false,
-      error: inviteErr?.message.includes("already")
-        ? "Ya existe una cuenta con ese email."
-        : "No se ha podido invitar.",
-    };
-  }
+  const invited = await accessLink("invite", d.email, origin, d.fullName);
+  if ("error" in invited) return { ok: false, error: invited.error };
+  if (d.phone) await admin.from("profiles").update({ phone: d.phone }).eq("id", invited.userId);
 
   const { data: client, error } = await admin
     .from("clients")
     .insert({
-      profile_id: invited.user.id,
+      profile_id: invited.userId,
       status: "pending_payment",
       plan_id: plan.id,
       billing_mode: d.billingMode,
@@ -129,9 +178,16 @@ export async function createClientByStaff(
     metadata: { plan: plan.key, billing_mode: d.billingMode },
   });
 
+  if (d.leadId) await admin.from("leads").update({ status: "won", client_id: client.id }).eq("id", d.leadId);
   if (d.billingMode === "stripe") await sendCheckoutLink(client.id);
   revalidatePath("/panel/clientes");
-  return { ok: true, clientId: client.id, message: "Cliente creado e invitado por email." };
+  revalidatePath("/panel/pendientes");
+  return {
+    ok: true,
+    clientId: client.id,
+    accessLink: invited.link,
+    message: "Cliente creado. Mándale su enlace de acceso.",
+  };
 }
 
 const paymentSchema = z.object({
@@ -414,4 +470,14 @@ export async function updateClientAdmin(input: {
 
 export async function goToNewClient(clientId: string) {
   redirect(`/panel/clientes/${clientId}`);
+}
+
+/** Rechazar (o archivar) una solicitud de plaza. */
+export async function dismissAccessRequest(leadId: string): Promise<StaffResult> {
+  await requireScope("clients");
+  const supabase = await createClient();
+  const { error } = await supabase.from("leads").update({ status: "lost" }).eq("id", leadId);
+  if (error) return { ok: false, error: "No se ha podido guardar." };
+  revalidatePath("/panel/pendientes");
+  return { ok: true };
 }

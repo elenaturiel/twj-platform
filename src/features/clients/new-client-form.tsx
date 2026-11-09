@@ -8,14 +8,22 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClientByStaff } from "./staff-actions";
+import { AccessLinkShare } from "./access-link";
 import { MODALITY_LABELS } from "./ui";
 
 type PlanOption = { key: string; name: string; priceCents: number | null; annualAllowed: boolean };
 
-export function NewClientForm({ plans }: { plans: PlanOption[] }) {
+type Defaults = { name?: string; email?: string; phone?: string; planKey?: string; leadId?: string };
+
+export function NewClientForm({ plans, defaults = {} }: { plans: PlanOption[]; defaults?: Defaults }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [planKey, setPlanKey] = useState(plans[0]?.key ?? "");
+  const [planKey, setPlanKey] = useState(
+    defaults.planKey && plans.some((p) => p.key === defaults.planKey) ? defaults.planKey : (plans[0]?.key ?? ""),
+  );
+  const [created, setCreated] = useState<{ clientId: string; link: string; name: string; phone: string | null } | null>(
+    null,
+  );
   const [modalities, setModalities] = useState<string[]>([]);
   const plan = plans.find((p) => p.key === planKey);
 
@@ -33,26 +41,53 @@ export function NewClientForm({ plans }: { plans: PlanOption[] }) {
         customAmountEuros: custom === "" ? undefined : Number(custom.replace(",", ".")),
         studentClaim: f.get("studentClaim") === "on",
         modalities: modalities as never,
+        phone: String(f.get("phone") ?? "") || undefined,
+        leadId: defaults.leadId,
       });
       if (!res.ok) {
         toast.error(res.error);
         return;
       }
       toast.success(res.message ?? "Cliente creado");
-      router.push(`/panel/clientes/${res.clientId}/pagos`);
+      if (res.accessLink && res.clientId) {
+        setCreated({
+          clientId: res.clientId,
+          link: res.accessLink,
+          name: String(f.get("fullName")),
+          phone: String(f.get("phone") ?? "") || null,
+        });
+      } else router.push(`/panel/clientes/${res.clientId}/pagos`);
     });
   }
+
+  if (created)
+    return (
+      <div className="max-w-xl space-y-4 rounded-2xl border bg-card p-5">
+        <h2 className="text-xl font-bold">✅ {created.name} ya tiene cuenta</h2>
+        <p className="text-sm text-muted-foreground">
+          Mándale este enlace para que entre y ponga su contraseña. Su acceso se activa cuando registres su primer pago.
+        </p>
+        <AccessLinkShare link={created.link} name={created.name} phone={created.phone} />
+        <Button variant="outline" onClick={() => router.push(`/panel/clientes/${created.clientId}/pagos`)}>
+          Ir a su ficha para registrar el pago
+        </Button>
+      </div>
+    );
 
   return (
     <form onSubmit={onSubmit} className="max-w-xl space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="fullName">Nombre y apellidos</Label>
-          <Input id="fullName" name="fullName" required minLength={2} />
+          <Input id="fullName" name="fullName" required minLength={2} defaultValue={defaults.name} />
         </div>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
-          <Input id="email" name="email" type="email" required />
+          <Input id="email" name="email" type="email" required defaultValue={defaults.email} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="phone">Teléfono (para mandarle el acceso por WhatsApp)</Label>
+          <Input id="phone" name="phone" type="tel" defaultValue={defaults.phone} placeholder="+34 600 000 000" />
         </div>
         <div className="space-y-2">
           <Label htmlFor="plan">Plan</Label>
@@ -122,10 +157,11 @@ export function NewClientForm({ plans }: { plans: PlanOption[] }) {
         </div>
       </fieldset>
       <p className="text-xs text-muted-foreground">
-        Le llega un email de invitación para poner su contraseña. El acceso se activa con el primer pago registrado.
+        Al crearlo te damos un enlace de acceso para mandárselo por WhatsApp (y le llega por email si está configurado).
+        El acceso se activa con el primer pago registrado.
       </p>
       <Button type="submit" disabled={pending}>
-        {pending ? "Creando…" : "Crear e invitar"}
+        {pending ? "Creando…" : "Crear y generar acceso"}
       </Button>
     </form>
   );

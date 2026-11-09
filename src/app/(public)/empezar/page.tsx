@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PlanPicker } from "@/features/billing/plan-picker";
 import { getFounderSlotsLeft, getPublicPlans } from "@/features/billing/public-plans";
+import { getPublicSettings } from "@/lib/settings";
 
 export const metadata: Metadata = { title: "Empieza" };
 
@@ -10,7 +11,11 @@ const ANNUAL_PERCENT = 20;
 
 export default async function StartPage({ searchParams }: PageProps<"/empezar">) {
   const { cancelado } = await searchParams;
-  const [plans, founderSlotsLeft] = await Promise.all([getPublicPlans(), getFounderSlotsLeft()]);
+  const [plans, founderSlotsLeft, settings] = await Promise.all([
+    getPublicPlans(),
+    getFounderSlotsLeft(),
+    getPublicSettings(),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -21,6 +26,13 @@ export default async function StartPage({ searchParams }: PageProps<"/empezar">)
           ¿Ya has hecho tu asesoría gratis con Jaime? Ahora toca empezar. Sin permanencia: cancelas cuando quieras.
         </p>
       </div>
+      {!settings.publicSignup ? (
+        <Alert>
+          <AlertDescription>
+            Plazas limitadas: elige tu plan y solicita tu plaza. Jaime revisa cada solicitud y te escribe con tu acceso.
+          </AlertDescription>
+        </Alert>
+      ) : null}
       {cancelado ? (
         <Alert>
           <AlertDescription>Pago cancelado. No te hemos cobrado nada; cuando quieras, seguimos.</AlertDescription>

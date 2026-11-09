@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { MODALITY_LABELS, StatusBadge } from "@/features/clients/ui";
 import { ClientTabs } from "./client-tabs";
+import { AccessLinkButton } from "@/features/clients/access-link";
 
 export default async function ClientLayout({ children, params }: LayoutProps<"/panel/clientes/[id]">) {
   await requireStaff();
@@ -32,6 +33,9 @@ export default async function ClientLayout({ children, params }: LayoutProps<"/p
             {MODALITY_LABELS[m] ?? m}
           </Badge>
         ))}
+        <span className="ml-auto">
+          <AccessLinkButton clientId={c.id} name={c.profiles?.full_name || c.profiles?.email || "el cliente"} />
+        </span>
         {c.is_minor ? (
           <Badge variant="destructive">Menor · tutor {c.guardian_status === "confirmed" ? "OK" : "pendiente"}</Badge>
         ) : null}

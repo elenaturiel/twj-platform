@@ -1,5 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { uniqueEmail } from "./helpers";
+import { testDb, uniqueEmail } from "./helpers";
+
+// Estas pruebas son del alta abierta con pago: la activan mientras duran
+test.beforeAll(async () => {
+  await testDb().from("settings").update({ value: true }).eq("key", "access.public_signup");
+});
+test.afterAll(async () => {
+  await testDb().from("settings").update({ value: false }).eq("key", "access.public_signup");
+});
 
 test("alta + pago: elige plan, crea cuenta, paga y rellena la ficha", async ({ page }) => {
   await page.goto("/empezar");

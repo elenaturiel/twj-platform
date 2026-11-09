@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getPublicSettings } from "@/lib/settings";
 import { getViewer } from "@/lib/auth/dal";
 import { getStripe, paymentsMode } from "@/lib/payments/stripe";
 import { requestOrigin } from "@/lib/request";
@@ -81,6 +82,10 @@ export async function startSignup(_: SignupState, formData: FormData): Promise<S
     return { error: "Revisa los campos marcados.", fieldErrors };
   }
   const input = parsed.data;
+  // Alta cerrada: solo entra quien acepte el equipo (se solicita plaza)
+  if (!(await getPublicSettings()).publicSignup) {
+    return { error: "Ahora mismo el alta es solo con invitación. Solicita tu plaza y Jaime te escribe." };
+  }
   const origin = await requestOrigin();
   const admin = createAdminClient();
 

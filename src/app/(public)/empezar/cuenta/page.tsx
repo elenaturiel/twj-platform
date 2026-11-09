@@ -4,6 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { getViewer } from "@/lib/auth/dal";
 import { getPublicPlans, getSquadPlanKeys } from "@/features/billing/public-plans";
 import { SignupForm } from "@/features/billing/signup-form";
+import { AccessRequestForm } from "@/features/billing/access-request-form";
+import { getPublicSettings } from "@/lib/settings";
 
 export const metadata: Metadata = { title: "Crea tu cuenta" };
 
@@ -15,6 +17,22 @@ export default async function SignupPage({ searchParams }: PageProps<"/empezar/c
   const plan = plans.find((p) => p.key === planKey);
   if (!plan) notFound();
   if (plan.requiresApplication) redirect("/empezar/peak");
+
+  const { publicSignup } = await getPublicSettings();
+  if (!publicSignup) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <Link href="/empezar" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
+            ← Ver los planes
+          </Link>
+          <h1 className="mt-2 text-3xl font-extrabold">Solicita tu plaza en {plan.name}</h1>
+          <p className="text-muted-foreground">{plan.tagline}</p>
+        </div>
+        <AccessRequestForm planKey={plan.key} planName={plan.name} />
+      </div>
+    );
+  }
 
   const viewer = await getViewer();
   if (viewer && viewer.role !== "client") {

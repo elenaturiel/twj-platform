@@ -15,6 +15,8 @@ export default defineConfig({
   testDir: "tests/e2e",
   timeout: 60_000,
   fullyParallel: false,
+  // De uno en uno: algunas pruebas cambian ajustes globales (p. ej. el alta abierta)
+  workers: 1,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
   use: {

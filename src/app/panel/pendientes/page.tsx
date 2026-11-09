@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/twj/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StudentCardReview } from "@/features/clients/staff-forms";
 import { formatDate } from "@/features/clients/ui";
+import { AccessRequestRow } from "@/features/clients/access-requests";
 
 export const metadata: Metadata = { title: "Pendientes" };
 
@@ -13,34 +14,49 @@ export const metadata: Metadata = { title: "Pendientes" };
 export default async function PendingPage() {
   await requireStaff();
   const supabase = await createClient();
-  const [{ data: cards }, { data: leads }, { data: flags }, { data: pendingPay }, { data: checkins }] =
-    await Promise.all([
-      supabase
-        .from("student_verifications")
-        .select("id, client_id, card_path, created_at, clients(profiles(full_name))")
-        .eq("status", "pending")
-        .order("created_at"),
-      supabase
-        .from("leads")
-        .select("id, name, email, phone, pack_weeks, event_name, event_date, message, created_at")
-        .in("status", ["new", "contacted"])
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("health_screenings")
-        .select("id, client_id, created_at, clients(profiles(full_name))")
-        .eq("has_flags", true)
-        .is("reviewed_at", null),
-      supabase
-        .from("clients")
-        .select("id, created_at, billing_mode, profiles(full_name), plans(name)")
-        .eq("status", "pending_payment")
-        .eq("billing_mode", "manual"),
-      supabase
-        .from("checkins")
-        .select("id, client_id, due_on, submitted_at, clients(profiles(full_name))")
-        .eq("status", "submitted")
-        .order("submitted_at"),
-    ]);
+  const [
+    { data: cards },
+    { data: leads },
+    { data: flags },
+    { data: pendingPay },
+    { data: checkins },
+    { data: requests },
+    { data: plans },
+  ] = await Promise.all([
+    supabase
+      .from("student_verifications")
+      .select("id, client_id, card_path, created_at, clients(profiles(full_name))")
+      .eq("status", "pending")
+      .order("created_at"),
+    supabase
+      .from("leads")
+      .select("id, name, email, phone, pack_weeks, event_name, event_date, message, created_at")
+      .eq("kind", "peak_application")
+      .in("status", ["new", "contacted"])
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("health_screenings")
+      .select("id, client_id, created_at, clients(profiles(full_name))")
+      .eq("has_flags", true)
+      .is("reviewed_at", null),
+    supabase
+      .from("clients")
+      .select("id, created_at, billing_mode, profiles(full_name), plans(name)")
+      .eq("status", "pending_payment")
+      .eq("billing_mode", "manual"),
+    supabase
+      .from("checkins")
+      .select("id, client_id, due_on, submitted_at, clients(profiles(full_name))")
+      .eq("status", "submitted")
+      .order("submitted_at"),
+    supabase
+      .from("leads")
+      .select("id, name, email, phone, message, answers, created_at")
+      .eq("kind", "access_request")
+      .in("status", ["new", "contacted"])
+      .order("created_at", { ascending: false }),
+    supabase.from("plans").select("key, name"),
+  ]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -85,6 +101,38 @@ export default async function PendingPage() {
             ))
           ) : (
             <EmptyState title="Nada que revisar." />
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Solicitudes de plaza ({requests?.length ?? 0})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {requests?.length ? (
+            <ul className="divide-y">
+              {requests.map((r) => {
+                const plan = ((r.answers as { plan?: string | null } | null)?.plan ?? null) as string | null;
+                return (
+                  <AccessRequestRow
+                    key={r.id}
+                    planName={plans?.find((p) => p.key === plan)?.name ?? null}
+                    r={{
+                      id: r.id,
+                      name: r.name,
+                      email: String(r.email),
+                      phone: r.phone,
+                      message: r.message,
+                      plan,
+                      created: formatDate(r.created_at, true),
+                    }}
+                  />
+                );
+              })}
+            </ul>
+          ) : (
+            <EmptyState title="Nadie esperando plaza." />
           )}
         </CardContent>
       </Card>
