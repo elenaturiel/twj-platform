@@ -13,6 +13,7 @@ const EDITABLE: Record<string, string> = {
   "billing.grace_days": "Días de gracia tras un pago vencido",
   "billing.manual_reminder_offsets": "Recordatorios de pago manual (días respecto al vencimiento)",
   "billing.extra_session_price_cents": "Precio sesión extra (céntimos)",
+  "billing.vat_percent": "IVA incluido en los precios (%), para desglosarlo en las facturas",
   "billing.max_total_discount_percent": "Tope de la suma de descuentos (%; null = sin tope)",
   "notifications.digest_hour": "Hora del resumen diario",
   "checkins.default_weekday": "Día del check-in por defecto (0 = lunes … 6 = domingo)",

@@ -8,7 +8,7 @@ import { getStripe, paymentsMode } from "@/lib/payments/stripe";
 import { requestOrigin } from "@/lib/request";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { ensureStripeCustomer } from "@/features/billing/stripe-sync";
+import { ensureStripeCustomer, ensureVatRate } from "@/features/billing/stripe-sync";
 import { fulfillExtraSession } from "./extra.server";
 import { getSlotsForDay } from "./queries";
 import { afterBooking, afterCancel, afterReschedule, bookingError } from "./sync.server";
@@ -127,6 +127,7 @@ export async function buyExtraSession(): Promise<{ url: string } | { error: stri
     email: ctx.viewer.email,
     full_name: ctx.viewer.fullName,
   });
+  const vatRate = await ensureVatRate(stripe, admin);
   const session = await stripe.checkout.sessions.create({
     mode: "payment",
     customer,
@@ -136,10 +137,23 @@ export async function buyExtraSession(): Promise<{ url: string } | { error: stri
         price_data: {
           currency: "eur",
           unit_amount: amount,
+          tax_behavior: "inclusive",
           product_data: { name: "Sesión extra 1 h · Train with Jaime" },
         },
+        ...(vatRate ? { tax_rates: [vatRate] } : {}),
       },
     ],
+    // Pago único con factura (no solo recibo); dirección y NIF opcionales
+    invoice_creation: {
+      enabled: true,
+      invoice_data: {
+        description: "Sesión extra de 1 h",
+        metadata: { kind: "extra_session", client_id: ctx.client.id },
+      },
+    },
+    billing_address_collection: "auto",
+    tax_id_collection: { enabled: true },
+    customer_update: { name: "auto", address: "auto" },
     metadata: { kind: "extra_session", client_id: ctx.client.id },
     payment_intent_data: { metadata: { kind: "extra_session", client_id: ctx.client.id } },
     locale: "es",

@@ -107,12 +107,12 @@ tests/e2e/          Playwright
 ### 4.2 Stripe
 
 1. Trabaja en **modo test** hasta el OK final.
-2. **No hace falta crear productos a mano**: la app crea el Product y los Price (IVA incluido, `tax_behavior=inclusive`) la primera vez que alguien paga un plan.
+2. **No hace falta crear productos a mano**: la app crea el Product y los Price (IVA incluido, `tax_behavior=inclusive`) la primera vez que alguien paga un plan. También crea el tipo de IVA (ajuste `billing.vat_percent`, 21 % por defecto: confirmarlo con la gestoría) para que facturas y recibos lo muestren desglosado. Las sesiones extra generan factura, y en el pago se puede poner dirección y NIF.
 3. **Developers → Webhooks → Add endpoint**:
    - URL: `https://app.trainwithjaime.es/api/webhooks/stripe`
    - Eventos: `checkout.session.completed`, `checkout.session.expired`, `invoice.paid`, `invoice.payment_failed`, `customer.subscription.updated`, `customer.subscription.deleted`.
    - Copia el _signing secret_ en `STRIPE_WEBHOOK_SECRET`.
-4. **Settings → Billing → Customer portal**: actívalo. Permite actualizar el método de pago, ver facturas y cancelar al final del periodo. No actives el cambio de plan desde el portal: los cambios de plan van por la app.
+4. **Customer portal**: ya configurado en el sandbox por API (historial de facturas, método de pago, datos y NIF, baja al final del periodo; sin cambio de plan). En live hay que repetirlo o activarlo en Settings → Billing → Customer portal. Permite actualizar el método de pago, ver facturas y cancelar al final del periodo. No actives el cambio de plan desde el portal: los cambios de plan van por la app.
 5. Variables: `STRIPE_SECRET_KEY` y `STRIPE_WEBHOOK_SECRET`. En producción **no** definas `PAYMENTS_MOCK`: el simulador además se niega a funcionar si `VERCEL_ENV=production`.
 6. Para probar el webhook en local: `stripe listen --forward-to localhost:3000/api/webhooks/stripe` y usa el `whsec_…` que imprime.
 

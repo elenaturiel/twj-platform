@@ -138,3 +138,37 @@ export async function attachRecurringDiscounts(
   }
   await stripe.subscriptions.update(stripeSubscriptionId, { discounts });
 }
+
+/**
+ * Tipo de IVA de Stripe (incluido en el precio) para que facturas y recibos lo
+ * muestren desglosado. El porcentaje sale del ajuste `billing.vat_percent`
+ * (null = no desglosar). Se crea una vez por porcentaje y se guarda el id.
+ */
+export async function ensureVatRate(stripe: Stripe, admin: Admin): Promise<string | null> {
+  const { data: rows } = await admin
+    .from("settings")
+    .select("key, value")
+    .in("key", ["billing.vat_percent", "billing.stripe_vat_rate"]);
+  const percent = rows?.find((r) => r.key === "billing.vat_percent")?.value;
+  if (typeof percent !== "number" || percent <= 0) return null;
+  const saved = rows?.find((r) => r.key === "billing.stripe_vat_rate")?.value as
+    { id?: string; percent?: number } | null | undefined;
+  if (saved?.id && saved.percent === percent) return saved.id;
+  const rate = await stripe.taxRates.create(
+    {
+      display_name: "IVA",
+      description: `IVA ${percent} % (incluido)`,
+      percentage: percent,
+      inclusive: true,
+      country: "ES",
+      jurisdiction: "ES",
+      tax_type: "vat",
+    },
+    { idempotencyKey: `vat-es-${percent}` },
+  );
+  await admin
+    .from("settings")
+    .update({ value: { id: rate.id, percent } })
+    .eq("key", "billing.stripe_vat_rate");
+  return rate.id;
+}

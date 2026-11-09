@@ -12,7 +12,7 @@ import { buildSignupQuote } from "./quote.server";
 import { quoteInputSchema, signupSchema, type QuoteInput } from "./schemas";
 import { newSquadCode } from "./squads.server";
 import { applySubscriptionPayment } from "./fulfillment";
-import { createFirstPeriodCoupon, ensureStripeCustomer, ensureStripePrice } from "./stripe-sync";
+import { createFirstPeriodCoupon, ensureStripeCustomer, ensureStripePrice, ensureVatRate } from "./stripe-sync";
 
 export type PublicQuote = {
   planName: string;
@@ -290,10 +290,15 @@ export async function startSignup(_: SignupState, formData: FormData): Promise<S
       q.discountCents,
       q.lines.map((l) => l.label).join(" + ") || "Descuento TWJ",
     );
+    const vatRate = await ensureVatRate(stripe, admin);
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1, ...(vatRate ? { tax_rates: [vatRate] } : {}) }],
+      // Para facturas: dirección y NIF opcionales (p. ej. si lo paga una empresa)
+      billing_address_collection: "auto",
+      tax_id_collection: { enabled: true },
+      customer_update: { name: "auto", address: "auto" },
       ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
       locale: "es",
       client_reference_id: client.id,
