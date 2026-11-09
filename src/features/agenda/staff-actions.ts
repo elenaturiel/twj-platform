@@ -2,6 +2,8 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { evaluateClient } from "@/features/engagement/engine.server";
 import { z } from "zod";
 import { requireScope } from "@/lib/auth/dal";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -110,6 +112,9 @@ export async function saveAppointmentOutcome(input: z.input<typeof outcomeSchema
       p_link: "/agenda",
       p_client_id: data.client_id,
     });
+  }
+  if (p.data.status === "completed") {
+    after(() => evaluateClient(data.client_id).catch((e) => console.error("[engagement]", e)));
   }
   refresh(data.client_id);
   return { ok: true };

@@ -4,6 +4,8 @@ import { serverEnv } from "@/lib/env.server";
 import { runBillingJob } from "@/features/billing/cron";
 import { runCheckinsJob } from "@/features/tracking/cron";
 import { runAgendaJob } from "@/features/agenda/cron";
+import { runEngagementJob } from "@/features/engagement/engine.server";
+import { runHyroxMailings } from "@/features/hyrox/mailings.server";
 import { processOutbox, sendDigests } from "@/lib/notifications/worker";
 
 export const runtime = "nodejs";
@@ -13,6 +15,8 @@ const JOBS = {
   billing: runBillingJob,
   checkins: runCheckinsJob,
   agenda: runAgendaJob,
+  engagement: runEngagementJob,
+  hyrox: (site: string) => runHyroxMailings(site),
   notifications: (site: string) => processOutbox(site),
   digest: sendDigests,
 } as const;

@@ -11,6 +11,10 @@ insert into public.clients (id, profile_id, status, plan_id, onboarding_complete
 select v.id::uuid, v.p::uuid, 'active', (select id from public.plans where key = 'mvp'), now()
 from (values ('22000000-0000-0000-0000-0000000000e1', '00000000-0000-0000-0000-0000000000e1'),
              ('22000000-0000-0000-0000-0000000000e2', '00000000-0000-0000-0000-0000000000e2')) v(id, p);
+-- Aislado de las citas de demo (todo se deshace con el rollback)
+delete from public.session_credits where appointment_id is not null;
+delete from public.appointments;
+
 -- Un solo horario abierto para no depender del por defecto: lunes 18-21 h
 delete from public.availability;
 delete from public.availability_exceptions;

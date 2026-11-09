@@ -12,6 +12,8 @@ import {
   Tags,
   Users,
   MessageSquare,
+  Trophy,
+  Flag,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { BottomNav, SideNav, type NavItem } from "@/components/twj/nav";
@@ -26,6 +28,8 @@ function useItems(): NavItem[] {
     { href: "/panel/agenda", label: t("agenda"), icon: CalendarDays },
     { href: "/panel/biblioteca", label: t("library"), icon: BookOpen },
     { href: "/panel/seguimiento", label: t("tracking"), icon: Activity },
+    { href: "/panel/retos", label: t("challenges"), icon: Trophy },
+    { href: "/panel/hyrox", label: t("hyrox"), icon: Flag },
     { href: "/panel/pagos", label: t("payments"), icon: CreditCard },
     { href: "/panel/negocio", label: t("business"), icon: LineChart },
     { href: "/panel/planes", label: t("plans"), icon: Tags },

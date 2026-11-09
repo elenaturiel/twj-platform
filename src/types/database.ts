@@ -169,6 +169,86 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"badges": {
+                  Row: {
+                    "created_at": string,"description": string,"icon": string,"is_active": boolean,"key": string,"kind": string,"name": string,"sort_order": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"description": string,"icon"?: string,"is_active"?: boolean,"key": string,"kind": string,"name": string,"sort_order"?: number
+                  }
+                  Update: {
+                    "created_at"?: string,"description"?: string,"icon"?: string,"is_active"?: boolean,"key"?: string,"kind"?: string,"name"?: string,"sort_order"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"banner_events": {
+                  Row: {
+                    "banner_key": string,"created_at": string,"event": string,"id": number,"referrer": string | null,"session_hash": string | null,"ubicacion": string | null,"utm_source": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "banner_key"?: string,"created_at"?: string,"event": string,"id"?: never,"referrer"?: string | null,"session_hash"?: string | null,"ubicacion"?: string | null,"utm_source"?: string | null
+                  }
+                  Update: {
+                    "banner_key"?: string,"created_at"?: string,"event"?: string,"id"?: never,"referrer"?: string | null,"session_hash"?: string | null,"ubicacion"?: string | null,"utm_source"?: string | null
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"challenge_participants": {
+                  Row: {
+                    "challenge_id": string,"client_id": string,"completed_at": string | null,"joined_at": string,"progress": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "challenge_id": string,"client_id": string,"completed_at"?: string | null,"joined_at"?: string,"progress"?: number
+                  }
+                  Update: {
+                    "challenge_id"?: string,"client_id"?: string,"completed_at"?: string | null,"joined_at"?: string,"progress"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "challenge_participants_challenge_id_fkey"
+      columns: ["challenge_id"]
+isOneToOne: false
+      referencedRelation: "challenges"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "challenge_participants_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"challenges": {
+                  Row: {
+                    "badge_key": string | null,"created_at": string,"created_by": string | null,"description": string | null,"ends_on": string,"id": string,"is_active": boolean,"plan_keys": (string)[],"rule": NonNullable<Json>,"starts_on": string,"title": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "badge_key"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"ends_on": string,"id"?: string,"is_active"?: boolean,"plan_keys"?: (string)[],"rule": NonNullable<Json>,"starts_on": string,"title": string
+                  }
+                  Update: {
+                    "badge_key"?: string | null,"created_at"?: string,"created_by"?: string | null,"description"?: string | null,"ends_on"?: string,"id"?: string,"is_active"?: boolean,"plan_keys"?: (string)[],"rule"?: NonNullable<Json>,"starts_on"?: string,"title"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "challenges_badge_key_fkey"
+      columns: ["badge_key"]
+isOneToOne: false
+      referencedRelation: "badges"
+      referencedColumns: ["key"]
+    },{
+      foreignKeyName: "challenges_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"checkin_answers": {
                   Row: {
                     "checkin_id": string,"client_id": string,"question_key": string,"question_label": string,"value": Json | null
@@ -238,6 +318,32 @@ isOneToOne: false
       columns: ["template_id"]
 isOneToOne: false
       referencedRelation: "checkin_templates"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"client_badges": {
+                  Row: {
+                    "awarded_at": string,"badge_key": string,"client_id": string,"seen_at": string | null,"source_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "awarded_at"?: string,"badge_key": string,"client_id": string,"seen_at"?: string | null,"source_id"?: string | null
+                  }
+                  Update: {
+                    "awarded_at"?: string,"badge_key"?: string,"client_id"?: string,"seen_at"?: string | null,"source_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "client_badges_badge_key_fkey"
+      columns: ["badge_key"]
+isOneToOne: false
+      referencedRelation: "badges"
+      referencedColumns: ["key"]
+    },{
+      foreignKeyName: "client_badges_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
       referencedColumns: ["id"]
     }
                   ]
@@ -341,6 +447,26 @@ isOneToOne: false
       foreignKeyName: "client_notes_client_id_fkey"
       columns: ["client_id"]
 isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"client_streaks": {
+                  Row: {
+                    "best_checkin_streak": number,"best_training_weeks": number,"checkin_streak": number,"client_id": string,"training_weeks": number,"updated_at": string,"week_done": number,"week_planned": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "best_checkin_streak"?: number,"best_training_weeks"?: number,"checkin_streak"?: number,"client_id": string,"training_weeks"?: number,"updated_at"?: string,"week_done"?: number,"week_planned"?: number
+                  }
+                  Update: {
+                    "best_checkin_streak"?: number,"best_training_weeks"?: number,"checkin_streak"?: number,"client_id"?: string,"training_weeks"?: number,"updated_at"?: string,"week_done"?: number,"week_planned"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "client_streaks_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: true
       referencedRelation: "clients"
       referencedColumns: ["id"]
     }
@@ -728,6 +854,66 @@ isOneToOne: false
     },{
       foreignKeyName: "health_screenings_reviewed_by_fkey"
       columns: ["reviewed_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"hyrox_events": {
+                  Row: {
+                    "city": string | null,"created_at": string,"event_date": string,"id": string,"is_active": boolean,"name": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "city"?: string | null,"created_at"?: string,"event_date": string,"id"?: string,"is_active"?: boolean,"name": string
+                  }
+                  Update: {
+                    "city"?: string | null,"created_at"?: string,"event_date"?: string,"id"?: string,"is_active"?: boolean,"name"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"hyrox_mailing_recipients": {
+                  Row: {
+                    "error": string | null,"mailing_id": string,"sent_at": string | null,"status": string,"waitlist_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "error"?: string | null,"mailing_id": string,"sent_at"?: string | null,"status"?: string,"waitlist_id": string
+                  }
+                  Update: {
+                    "error"?: string | null,"mailing_id"?: string,"sent_at"?: string | null,"status"?: string,"waitlist_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "hyrox_mailing_recipients_mailing_id_fkey"
+      columns: ["mailing_id"]
+isOneToOne: false
+      referencedRelation: "hyrox_mailings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "hyrox_mailing_recipients_waitlist_id_fkey"
+      columns: ["waitlist_id"]
+isOneToOne: false
+      referencedRelation: "waitlist_hyrox"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"hyrox_mailings": {
+                  Row: {
+                    "body": string,"created_at": string,"created_by": string | null,"filter": NonNullable<Json>,"id": string,"sent": number,"status": string,"subject": string,"total": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "body": string,"created_at"?: string,"created_by"?: string | null,"filter"?: NonNullable<Json>,"id"?: string,"sent"?: number,"status"?: string,"subject": string,"total"?: number
+                  }
+                  Update: {
+                    "body"?: string,"created_at"?: string,"created_by"?: string | null,"filter"?: NonNullable<Json>,"id"?: string,"sent"?: number,"status"?: string,"subject"?: string,"total"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "hyrox_mailings_created_by_fkey"
+      columns: ["created_by"]
 isOneToOne: false
       referencedRelation: "profiles"
       referencedColumns: ["id"]
@@ -1813,6 +1999,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"waitlist_hyrox": {
+                  Row: {
+                    "consent_at": string | null,"consent_version": string | null,"created_at": string,"cuando": string | null,"email": string | null,"event_id": string | null,"id": string,"ip_hash": string | null,"nivel": string | null,"notes": string | null,"session_id": string,"source": string,"status": string,"ubicacion": string | null,"unsubscribe_token": string,"updated_at": string,"utm": NonNullable<Json>,"utm_source": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "consent_at"?: string | null,"consent_version"?: string | null,"created_at"?: string,"cuando"?: string | null,"email"?: string | null,"event_id"?: string | null,"id"?: string,"ip_hash"?: string | null,"nivel"?: string | null,"notes"?: string | null,"session_id": string,"source"?: string,"status"?: string,"ubicacion"?: string | null,"unsubscribe_token"?: string,"updated_at"?: string,"utm"?: NonNullable<Json>,"utm_source"?: never
+                  }
+                  Update: {
+                    "consent_at"?: string | null,"consent_version"?: string | null,"created_at"?: string,"cuando"?: string | null,"email"?: string | null,"event_id"?: string | null,"id"?: string,"ip_hash"?: string | null,"nivel"?: string | null,"notes"?: string | null,"session_id"?: string,"source"?: string,"status"?: string,"ubicacion"?: string | null,"unsubscribe_token"?: string,"updated_at"?: string,"utm"?: NonNullable<Json>,"utm_source"?: never
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "waitlist_hyrox_event_id_fkey"
+      columns: ["event_id"]
+isOneToOne: false
+      referencedRelation: "hyrox_events"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"workout_blocks": {
                   Row: {
                     "client_id": string | null,"created_at": string,"goal": string | null,"id": string,"name": string,"notes": string | null,"sort_order": number,"starts_on": string | null,"status": string,"template_id": string | null,"updated_at": string
@@ -2008,6 +2214,11 @@ isOneToOne: false
 "cancel_appointment":
 { Args: { "p_id": string,"p_reason"?: string }; Returns: boolean
                            },
+"challenge_leaderboard":
+{ Args: { "p_challenge": string }; Returns: {
+              "completed": boolean,"first_name": string,"is_me": boolean,"progress": number
+            }[]
+                           },
 "chat_unread_count":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
@@ -2058,11 +2269,29 @@ isOneToOne: false
 "has_scope":
 { Args: { "p_scope": string }; Returns: boolean
                            },
+"hyrox_allowed_origins":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
+"hyrox_capture":
+{ Args: { "p_consent"?: boolean,"p_cuando"?: string,"p_email"?: string,"p_ip_hash"?: string,"p_nivel"?: string,"p_session": string,"p_source"?: string,"p_ub"?: string,"p_utm"?: Json }; Returns: boolean
+                           },
+"hyrox_track":
+{ Args: { "p_event": string,"p_referrer"?: string,"p_session"?: string,"p_ub"?: string,"p_utm_source"?: string }; Returns: undefined
+                           },
+"hyrox_unsubscribe":
+{ Args: { "p_token": string }; Returns: boolean
+                           },
 "is_owner":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
 "is_staff":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"join_challenge":
+{ Args: { "p_challenge": string }; Returns: undefined
+                           },
+"leave_challenge":
+{ Args: { "p_challenge": string }; Returns: undefined
                            },
 "log_access":
 { Args: { "p_client_id": string,"p_entity": string,"p_entity_id": string,"p_metadata"?: Json }; Returns: undefined
@@ -2072,6 +2301,11 @@ isOneToOne: false
                            },
 "my_client_id":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"my_squad_overview":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "first_name": string,"is_me": boolean,"joined_at": string,"training_weeks": number,"week_done": number,"week_planned": number
+            }[]
                            },
 "my_squad_size":
 { Args: Record<PropertyKey, never>; Returns: number

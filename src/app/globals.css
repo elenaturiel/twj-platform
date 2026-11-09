@@ -95,3 +95,23 @@
     animation: none;
   }
 }
+
+/* Medalla nueva: destellos que salen del centro */
+@keyframes twj-burst {
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--a)) translateY(0) scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(var(--a)) translateY(-120px) scale(1);
+    opacity: 0;
+  }
+}
+.twj-burst {
+  animation: twj-burst 900ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .twj-burst {
+    display: none;
+  }
+}

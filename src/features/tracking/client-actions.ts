@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { evaluateClient } from "@/features/engagement/engine.server";
 import { z } from "zod";
 import { getClientContext } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
@@ -207,6 +209,7 @@ export async function submitCheckin(input: z.input<typeof submitSchema>): Promis
     p_link: `/panel/clientes/${ctx.client.id}/checkins`,
     p_client_id: ctx.client.id,
   });
+  after(() => evaluateClient(ctx.client.id).catch((e) => console.error("[engagement]", e)));
   revalidatePath("/progreso", "layout");
   revalidatePath("/hoy");
   return { ok: true };

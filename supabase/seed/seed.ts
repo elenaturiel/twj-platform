@@ -211,6 +211,7 @@ async function main() {
   await seedNutrition();
   await seedAgenda();
   await seedChat();
+  await seedEngagement();
   console.log(`\nListo. Contraseña de todos los usuarios: ${PASSWORD}`);
 }
 
@@ -1246,6 +1247,78 @@ async function seedChat() {
     }
     console.log(`  ✓ chat de ${c.profiles?.full_name}`);
   }
+}
+
+async function seedEngagement() {
+  const { count } = await db.from("challenges").select("id", { count: "exact", head: true });
+  if (count) return console.log("Fase 7 ya cargada.");
+  console.log("→ Retos y lista HYROX");
+  const today = new Date();
+  const first = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
+  const last = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + 1, 0));
+  const ch = await must(
+    db
+      .from("challenges")
+      .insert({
+        title: "Mes sin fallar (demo)",
+        description: "12 entrenos registrados este mes. Si lo consigues, medalla.",
+        starts_on: iso(first),
+        ends_on: iso(last),
+        rule: { type: "workouts_count", target: 12 },
+        badge_key: "challenge_done",
+      })
+      .select("id")
+      .single(),
+    "reto",
+  );
+  await db.from("challenges").insert({
+    title: "300.000 pasos (demo)",
+    description: "Suma pasos durante el mes.",
+    starts_on: iso(first),
+    ends_on: iso(last),
+    rule: { type: "metric_total", metric: "steps", target: 300000 },
+    badge_key: "challenge_done",
+  });
+  const { data: clients } = await db
+    .from("clients")
+    .select("id, profiles(email)")
+    .eq("status", "active")
+    .not("onboarding_completed_at", "is", null);
+  const demo = (clients ?? []).filter((c) => c.profiles?.email?.endsWith("@twj.local"));
+  await db.from("challenge_participants").insert(demo.map((c) => ({ challenge_id: ch.id, client_id: c.id })));
+
+  // Lista HYROX: datos ficticios (dominio example.com) para ver el panel
+  const leads = [
+    { nivel: "nunca", cuando: "3-6m", ub: "home", src: "instagram", email: "lucia.demo@example.com" },
+    { nivel: "gimnasio", cuando: "3m", ub: "barra", src: "instagram", email: "marcos.demo@example.com" },
+    { nivel: "gimnasio", cuando: "mas-adelante", ub: "planes", src: null, email: "ana.demo@example.com" },
+    { nivel: "competido", cuando: "3m", ub: "footer", src: "tiktok", email: null },
+    { nivel: "nunca", cuando: null, ub: "home", src: null, email: null },
+  ];
+  for (const [i, l] of leads.entries()) {
+    await db.rpc("hyrox_capture", {
+      p_session: `demo-session-${i}-0000`,
+      p_ub: l.ub,
+      p_nivel: l.nivel,
+      p_cuando: l.cuando ?? undefined,
+      p_email: l.email ?? undefined,
+      p_consent: Boolean(l.email),
+      p_utm: l.src ? { utm_source: l.src } : {},
+    });
+  }
+  for (const [ev, n] of [
+    ["vista", 24],
+    ["paso1", 5],
+    ["paso2", 4],
+    ["envio", 3],
+  ] as const)
+    for (let k = 0; k < n; k++)
+      await db.rpc("hyrox_track", {
+        p_event: ev,
+        p_ub: k % 2 ? "home" : "barra",
+        p_utm_source: k % 3 ? "instagram" : undefined,
+      });
+  console.log("  ✓ 2 retos, lista HYROX de demo");
 }
 
 main().catch((e) => {

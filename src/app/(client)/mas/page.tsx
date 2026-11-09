@@ -1,6 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CalendarDays, ChevronRight, CreditCard, LogOut, MessageSquare, ShieldCheck, Trophy, User } from "lucide-react";
+import {
+  CalendarDays,
+  Medal,
+  Users,
+  ChevronRight,
+  CreditCard,
+  LogOut,
+  MessageSquare,
+  ShieldCheck,
+  Trophy,
+  User,
+} from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { signOut } from "@/features/auth/actions";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +26,9 @@ export default async function MorePage() {
     { href: "/perfil/plan", label: t("plan"), icon: CreditCard, ready: true },
     { href: "/agenda", label: t("agenda"), icon: CalendarDays, ready: true },
     { href: "/chat", label: t("chat"), icon: MessageSquare, ready: true },
-    { href: "/retos", label: t("challenges"), icon: Trophy, ready: false },
+    { href: "/retos", label: t("challenges"), icon: Trophy, ready: true },
+    { href: "/medallas", label: "Medallas", icon: Medal, ready: true },
+    { href: "/squad", label: "Squad", icon: Users, ready: true },
     { href: "/perfil/privacidad", label: "Privacidad y datos", icon: ShieldCheck, ready: false },
   ];
 

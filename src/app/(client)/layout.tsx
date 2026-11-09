@@ -8,6 +8,8 @@ import { ThemeToggle } from "@/components/twj/theme-toggle";
 import { formatDate } from "@/features/clients/ui";
 import { OutboxSync } from "@/features/training/ui/outbox-sync";
 import { ClientBottomNav } from "./client-nav";
+import { getUnseenBadges } from "@/features/engagement/queries";
+import { BadgeCelebration } from "@/features/engagement/ui/badge-celebration";
 
 export default async function ClientLayout({ children }: LayoutProps<"/">) {
   const ctx = await requireClientWithAccess();
@@ -22,6 +24,7 @@ export default async function ClientLayout({ children }: LayoutProps<"/">) {
       .neq("type", "chat_message"),
     supabase.rpc("chat_unread_count"),
   ]);
+  const newBadges = await getUnseenBadges(ctx.client.id);
   const badge = (n: number) =>
     n ? (
       <span className="absolute top-0.5 right-0.5 min-w-4 rounded-full bg-destructive px-1 text-center text-[10px] leading-4 font-bold text-white">
@@ -68,6 +71,7 @@ export default async function ClientLayout({ children }: LayoutProps<"/">) {
       <main className="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24">{children}</main>
       <ClientBottomNav />
       <OutboxSync />
+      {newBadges.length ? <BadgeCelebration badges={newBadges} /> : null}
     </div>
   );
 }

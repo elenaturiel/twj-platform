@@ -1,5 +1,7 @@
 "use server";
 
+import { after } from "next/server";
+import { evaluateClient } from "@/features/engagement/engine.server";
 import { revalidatePath } from "next/cache";
 import { getClientContext } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
@@ -156,6 +158,7 @@ export async function saveWorkoutLog(input: WorkoutLogInput): Promise<SaveLogRes
   }
 
   revalidatePath("/entreno", "layout");
+  after(() => evaluateClient(ctx.client.id).catch((e) => console.error("[engagement]", e)));
   revalidatePath("/hoy");
   return { ok: true, records };
 }

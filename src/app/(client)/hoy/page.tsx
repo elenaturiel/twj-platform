@@ -7,6 +7,8 @@ import { todayInMadrid } from "@/lib/dates";
 import { getTrainingOverview } from "@/features/training/queries";
 import { getCreditBalances, getNextAppointment } from "@/features/agenda/queries";
 import { formatSlot } from "@/domain/agenda/slots";
+import { getStreak } from "@/features/engagement/queries";
+import { StreakCard } from "@/features/engagement/ui/streak-card";
 import { MODALITY_LABELS } from "@/domain/training/prescription";
 import { getPublicSettings } from "@/lib/settings";
 import { createClient } from "@/lib/supabase/server";
@@ -29,7 +31,11 @@ export default async function TodayPage() {
     p_feature: "live_sessions",
   });
   const firstName = ctx.viewer.fullName.split(" ")[0] || "crack";
-  const [next, credits] = await Promise.all([getNextAppointment(ctx.client.id), getCreditBalances(ctx.client.id)]);
+  const [next, credits, streak] = await Promise.all([
+    getNextAppointment(ctx.client.id),
+    getCreditBalances(ctx.client.id),
+    getStreak(ctx.client.id),
+  ]);
   const liveCredits = credits.live_training + credits.extra;
   // eslint-disable-next-line react-hooks/purity -- hora de la petición (servidor)
   const soon = next ? new Date(next.starts_at).getTime() - Date.now() < 15 * 60_000 : false;
@@ -105,6 +111,13 @@ export default async function TodayPage() {
           )}
         </CardContent>
       </Card>
+
+      <StreakCard
+        weeks={streak?.training_weeks ?? 0}
+        best={streak?.best_training_weeks ?? 0}
+        done={streak?.week_done ?? 0}
+        planned={streak?.week_planned ?? 0}
+      />
 
       <section className="space-y-2">
         <h2 className="text-xl font-bold">{t("todayWorkout")}</h2>
