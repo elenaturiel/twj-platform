@@ -3,6 +3,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { fontHeading, fontSans } from "@/styles/fonts";
 import { Providers } from "@/components/twj/providers";
+import { CookieNotice } from "@/components/twj/cookie-notice";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -37,7 +38,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col">
         <NextIntlClientProvider>
-          <Providers>{children}</Providers>
+          <Providers>
+            {children}
+            <CookieNotice />
+          </Providers>
         </NextIntlClientProvider>
       </body>
     </html>

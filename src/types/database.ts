@@ -615,6 +615,38 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"data_requests": {
+                  Row: {
+                    "client_id": string | null,"created_at": string,"id": string,"kind": string,"notes": string | null,"processed_at": string | null,"processed_by": string | null,"profile_id": string,"reason": string | null,"status": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "client_id"?: string | null,"created_at"?: string,"id"?: string,"kind": string,"notes"?: string | null,"processed_at"?: string | null,"processed_by"?: string | null,"profile_id": string,"reason"?: string | null,"status"?: string
+                  }
+                  Update: {
+                    "client_id"?: string | null,"created_at"?: string,"id"?: string,"kind"?: string,"notes"?: string | null,"processed_at"?: string | null,"processed_by"?: string | null,"profile_id"?: string,"reason"?: string | null,"status"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "data_requests_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "data_requests_processed_by_fkey"
+      columns: ["processed_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "data_requests_profile_id_fkey"
+      columns: ["profile_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"day_notes": {
                   Row: {
                     "author_id": string,"body": string,"client_id": string,"created_at": string,"date": string,"id": string
@@ -2203,7 +2235,10 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "book_appointment":
+            "anonymize_client":
+{ Args: { "p_client": string }; Returns: undefined
+                           },
+"book_appointment":
 { Args: { "p_client_id"?: string,"p_notes"?: string,"p_starts_at": string,"p_type": string,"p_use_credit"?: boolean }; Returns: string
                            },
 "busy_ranges":
@@ -2242,6 +2277,9 @@ isOneToOne: false
                            },
 "expire_discount_reservations":
 { Args: Record<PropertyKey, never>; Returns: number
+                           },
+"export_my_data":
+{ Args: Record<PropertyKey, never>; Returns: Json
                            },
 "feature_for_client":
 { Args: { "p_client_id": string,"p_feature": string }; Returns: {
@@ -2321,6 +2359,14 @@ isOneToOne: false
                            },
 "reserve_founder_slot":
 { Args: { "p_client_id": string,"p_minutes"?: number,"p_subscription_id": string }; Returns: string
+                           },
+"retained_client_tables":
+{ Args: Record<PropertyKey, never>; Returns: (string)[]
+                           },
+"retention_due_clients":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "cancelled_at": string,"client_id": string
+            }[]
                            },
 "slot_is_open":
 { Args: { "p_end": string,"p_start": string,"p_type": string }; Returns: boolean

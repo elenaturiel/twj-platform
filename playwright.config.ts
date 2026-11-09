@@ -22,6 +22,11 @@ export default defineConfig({
     locale: "es-ES",
     timezoneId: "Europe/Madrid",
     trace: "retain-on-failure",
+    // El aviso de cookies ya "visto" para que no tape botones (hay un test propio)
+    storageState: {
+      cookies: [],
+      origins: [{ origin: `http://localhost:${PORT}`, localStorage: [{ name: "twj-cookie-notice", value: "e2e" }] }],
+    },
   },
   projects: [{ name: "mobile", use: { ...devices["Pixel 7"] } }],
   webServer: {

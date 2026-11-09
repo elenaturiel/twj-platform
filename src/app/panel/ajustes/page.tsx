@@ -48,6 +48,15 @@ export default async function SettingsPage() {
             <Link href="/panel/ajustes/plantillas" className="underline">
               Plantillas de email
             </Link>
+            <Link href="/panel/legal" className="underline">
+              Textos legales
+            </Link>
+            <Link href="/panel/equipo" className="underline">
+              Equipo y permisos
+            </Link>
+            <Link href="/panel/privacidad" className="underline">
+              Privacidad (RGPD) y registro de actividad
+            </Link>
           </div>
         </CardContent>
       </Card>
@@ -70,9 +79,7 @@ export default async function SettingsPage() {
           })}
         </CardContent>
       </Card>
-      <p className="text-sm text-muted-foreground">
-        Disponibilidad y Google Calendar: en Agenda → Disponibilidad. Textos legales y permisos del equipo: en Negocio.
-      </p>
+      <p className="text-sm text-muted-foreground">Disponibilidad y Google Calendar: en Agenda → Disponibilidad.</p>
     </div>
   );
 }

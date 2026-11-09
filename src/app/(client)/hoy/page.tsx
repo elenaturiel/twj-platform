@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getUnseenBadges } from "@/features/engagement/queries";
+import { BadgeCelebration } from "@/features/engagement/ui/badge-celebration";
 import Link from "next/link";
 import { Dumbbell, Video } from "lucide-react";
 import { getTranslations } from "next-intl/server";
@@ -36,6 +38,7 @@ export default async function TodayPage() {
     getCreditBalances(ctx.client.id),
     getStreak(ctx.client.id),
   ]);
+  const newBadges = await getUnseenBadges(ctx.client.id);
   const liveCredits = credits.live_training + credits.extra;
   // eslint-disable-next-line react-hooks/purity -- hora de la petición (servidor)
   const soon = next ? new Date(next.starts_at).getTime() - Date.now() < 15 * 60_000 : false;
@@ -52,6 +55,7 @@ export default async function TodayPage() {
 
   return (
     <div className="space-y-5">
+      {newBadges.length ? <BadgeCelebration badges={newBadges} /> : null}
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">{ctx.client.planName ? `Plan ${ctx.client.planName}` : null}</p>

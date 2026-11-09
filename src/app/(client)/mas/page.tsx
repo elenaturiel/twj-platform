@@ -29,7 +29,7 @@ export default async function MorePage() {
     { href: "/retos", label: t("challenges"), icon: Trophy, ready: true },
     { href: "/medallas", label: "Medallas", icon: Medal, ready: true },
     { href: "/squad", label: "Squad", icon: Users, ready: true },
-    { href: "/perfil/privacidad", label: "Privacidad y datos", icon: ShieldCheck, ready: false },
+    { href: "/perfil/privacidad", label: "Privacidad y datos", icon: ShieldCheck, ready: true },
   ];
 
   return (

@@ -220,3 +220,67 @@ export async function updateTemplate(input: z.infer<typeof templateSchema>): Pro
   revalidatePath("/panel/ajustes/plantillas");
   return { ok: true };
 }
+
+const legalSchema = z.object({
+  kind: z.enum([
+    "privacy",
+    "legal_notice",
+    "terms",
+    "cookies",
+    "health_data",
+    "progress_photos",
+    "marketing",
+    "guardian",
+    "health_screening",
+  ]),
+  version: z
+    .string()
+    .trim()
+    .regex(/^[\w.-]{2,40}$/),
+  title: z.string().trim().min(2).max(160),
+  body: z.string().trim().min(20).max(100000),
+});
+
+/** Guarda una versión de un texto legal como borrador (no se ve hasta publicarla). */
+export async function saveLegalDraft(input: z.infer<typeof legalSchema>): Promise<ConfigResult> {
+  await requireScope("settings");
+  const p = legalSchema.safeParse(input);
+  if (!p.success)
+    return { ok: false, error: "Revisa la versión (letras, números, puntos o guiones), el título y el texto." };
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("legal_documents")
+    .select("id, is_draft")
+    .eq("kind", p.data.kind)
+    .eq("version", p.data.version)
+    .maybeSingle();
+  if (existing && !existing.is_draft)
+    return { ok: false, error: "Esa versión ya está publicada: usa un número de versión nuevo." };
+  const row = { kind: p.data.kind, version: p.data.version, title: p.data.title, body_md: p.data.body, is_draft: true };
+  const { error } = existing
+    ? await supabase.from("legal_documents").update(row).eq("id", existing.id)
+    : await supabase.from("legal_documents").insert(row);
+  if (error) return { ok: false, error: "No se ha podido guardar." };
+  revalidatePath("/panel/legal");
+  return { ok: true };
+}
+
+/** Publica una versión: pasa a ser la vigente y la que se registra en los consentimientos nuevos. */
+export async function publishLegal(id: string): Promise<ConfigResult> {
+  await requireScope("settings");
+  const supabase = await createClient();
+  const { data: doc } = await supabase.from("legal_documents").select("id, kind, version").eq("id", id).single();
+  if (!doc) return { ok: false, error: "No encontrado." };
+  await supabase
+    .from("legal_documents")
+    .update({ is_draft: false, published_at: new Date().toISOString() })
+    .eq("id", id);
+  const { data: s } = await supabase.from("settings").select("value").eq("key", "legal.current_versions").single();
+  const map = { ...((s?.value as Record<string, string>) ?? {}) };
+  // Las claves de consentimiento usan "terms", "privacy"…; aviso legal y cuestionario no se consienten
+  map[doc.kind === "legal_notice" ? "legal_notice" : doc.kind] = doc.version;
+  await supabase.from("settings").update({ value: map }).eq("key", "legal.current_versions");
+  revalidatePath("/panel/legal");
+  revalidatePath("/legal", "layout");
+  return { ok: true };
+}
