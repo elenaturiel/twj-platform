@@ -1,12 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 import { z } from "zod";
 import { getClientContext, requireScope } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { parseRule } from "@/domain/engagement/engagement";
-import { evaluateClient } from "./engine.server";
+import { evaluateQuietly } from "./engine.server";
 
 export type EngagementResult = { ok: true } | { ok: false; error: string };
 
@@ -18,7 +17,7 @@ export async function joinChallenge(id: string): Promise<EngagementResult> {
   if (error)
     return { ok: false, error: error.message.startsWith("Este reto") ? error.message : "No te has podido unir." };
   // Calcula ya el progreso (lo que llevas desde que empezó el reto cuenta)
-  after(() => evaluateClient(ctx.client.id).catch(() => {}));
+  await evaluateQuietly(ctx.client.id);
   revalidatePath("/retos");
   return { ok: true };
 }

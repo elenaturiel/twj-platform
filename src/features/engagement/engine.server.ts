@@ -233,3 +233,14 @@ export async function runEngagementJob() {
   for (const c of clients ?? []) awarded += (await evaluateClient(c.id)).length;
   return { clients: clients?.length ?? 0, awarded };
 }
+
+/**
+ * Recalcula sin hacer fallar la acción que lo llama y con un tope de tiempo.
+ * Se espera dentro de la acción para que en serverless no se corte a medias.
+ */
+export async function evaluateQuietly(clientId: string, ms = 3000) {
+  await Promise.race([
+    evaluateClient(clientId).catch((e) => console.error("[engagement]", e)),
+    new Promise((r) => setTimeout(r, ms)),
+  ]);
+}

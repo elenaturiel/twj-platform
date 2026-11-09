@@ -45,7 +45,13 @@ export const logSchema = z.object({
   title: z.string().max(120).nullable(),
   started_at: z.iso.datetime({ offset: true }),
   completed_at: z.iso.datetime({ offset: true }),
-  total_time_s: z.number().int().min(0).max(86400).nullable(),
+  // Un reloj del móvil que salta no debe hacer perder el entreno: negativo → 0
+  total_time_s: z
+    .number()
+    .int()
+    .max(86400)
+    .transform((n) => Math.max(0, n))
+    .nullable(),
   session_rpe: z.number().min(0).max(10).nullable(),
   feeling: z.number().int().min(1).max(5).nullable(),
   comment: z.string().max(2000).nullable(),

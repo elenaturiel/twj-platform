@@ -141,7 +141,8 @@ export function WorkoutPlayer({
         .flat()
         .filter((s) => s.done).length
     : 0;
-  const elapsed = draft ? Math.floor((now - new Date(draft.startedAt).getTime()) / 1000) : 0;
+  // `now` se refresca cada 500 ms: justo al cargar puede ser anterior a startedAt
+  const elapsed = draft ? Math.max(0, Math.floor((now - new Date(draft.startedAt).getTime()) / 1000)) : 0;
 
   function finish(form: { rpe: number | null; feeling: number | null; comment: string }) {
     if (!draft) return;
@@ -162,13 +163,15 @@ export function WorkoutPlayer({
         })),
       ),
     );
+    // Duración con el reloj real al guardar (no con el último tick del cronómetro)
+    const totalTime = Math.max(0, Math.floor((Date.now() - new Date(draft.startedAt).getTime()) / 1000));
     const log = {
       id: draft.logId,
       session_id: sessionId,
       title,
       started_at: draft.startedAt,
       completed_at: new Date().toISOString(),
-      total_time_s: elapsed,
+      total_time_s: totalTime,
       session_rpe: form.rpe,
       feeling: form.feeling,
       comment: form.comment.trim() || null,
@@ -179,7 +182,7 @@ export function WorkoutPlayer({
         await queueLog(log);
         await clearDraft(sessionId);
         setFinishOpen(false);
-        setResult({ records: [], offline: true, elapsed, doneSets });
+        setResult({ records: [], offline: true, elapsed: totalTime, doneSets });
       };
       if (!navigator.onLine) return void (await goOffline());
       try {
@@ -187,7 +190,7 @@ export function WorkoutPlayer({
         if (res.ok) {
           await clearDraft(sessionId);
           setFinishOpen(false);
-          setResult({ records: res.records, offline: false, elapsed, doneSets });
+          setResult({ records: res.records, offline: false, elapsed: totalTime, doneSets });
         } else if (res.retryable) {
           await goOffline();
         } else {

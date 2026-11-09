@@ -2,8 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
-import { evaluateClient } from "@/features/engagement/engine.server";
+import { evaluateQuietly } from "@/features/engagement/engine.server";
 import { z } from "zod";
 import { requireScope } from "@/lib/auth/dal";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -114,7 +113,7 @@ export async function saveAppointmentOutcome(input: z.input<typeof outcomeSchema
     });
   }
   if (p.data.status === "completed") {
-    after(() => evaluateClient(data.client_id).catch((e) => console.error("[engagement]", e)));
+    await evaluateQuietly(data.client_id);
   }
   refresh(data.client_id);
   return { ok: true };
