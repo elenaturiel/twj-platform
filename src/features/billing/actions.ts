@@ -109,9 +109,26 @@ export async function startSignup(_: SignupState, formData: FormData): Promise<S
       password: input.password,
       options: { data: { full_name: input.fullName }, emailRedirectTo: `${origin}/auth/callback?next=/onboarding` },
     });
+    if (error) {
+      console.error("[alta] signUp", error.code, error.message);
+      return {
+        error:
+          error.code === "over_email_send_rate_limit"
+            ? "Ahora mismo no podemos crear cuentas nuevas. Prueba en unos minutos."
+            : error.code === "email_address_invalid"
+              ? "Ese email no parece válido."
+              : "No hemos podido crear tu cuenta. Prueba otra vez.",
+      };
+    }
     // Supabase no revela si el email existe: identities vacío = ya registrado
-    if (error || !data.user || data.user.identities?.length === 0) {
+    if (!data.user || data.user.identities?.length === 0) {
       return { error: "Ya hay una cuenta con ese email. Entra y vuelve a esta página para terminar el alta." };
+    }
+    // Si el proyecto exige confirmar el email, no hay sesión: hay que confirmar antes de pagar
+    if (!data.session) {
+      return {
+        error: "Te hemos enviado un email para confirmar tu cuenta. Ábrelo y vuelve aquí para terminar el alta.",
+      };
     }
     profileId = data.user.id;
     email = input.email;
@@ -296,6 +313,8 @@ export async function startSignup(_: SignupState, formData: FormData): Promise<S
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1, ...(vatRate ? { tax_rates: [vatRate] } : {}) }],
       // Para facturas: dirección y NIF opcionales (p. ej. si lo paga una empresa)
+      // Siempre en euros (sin conversión automática a la moneda del visitante)
+      adaptive_pricing: { enabled: false },
       billing_address_collection: "auto",
       tax_id_collection: { enabled: true },
       customer_update: { name: "auto", address: "auto" },

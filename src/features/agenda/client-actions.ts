@@ -151,6 +151,8 @@ export async function buyExtraSession(): Promise<{ url: string } | { error: stri
         metadata: { kind: "extra_session", client_id: ctx.client.id },
       },
     },
+    // Siempre en euros (sin conversión automática a la moneda del visitante)
+    adaptive_pricing: { enabled: false },
     billing_address_collection: "auto",
     tax_id_collection: { enabled: true },
     customer_update: { name: "auto", address: "auto" },
