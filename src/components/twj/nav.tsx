@@ -22,7 +22,10 @@ export function BottomNav({ items, className }: { items: NavItem[]; className?: 
         className,
       )}
     >
-      <ul className="mx-auto grid max-w-lg" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
+      <ul
+        className="mx-auto grid max-w-lg md:max-w-3xl lg:max-w-5xl"
+        style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}
+      >
         {items.map((item) => {
           const active = isActive(pathname, item);
           return (

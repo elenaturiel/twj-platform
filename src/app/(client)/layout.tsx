@@ -33,7 +33,7 @@ export default async function ClientLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-30 border-b bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur">
-        <div className="mx-auto flex h-14 max-w-lg items-center justify-between px-4">
+        <div className="mx-auto flex h-14 max-w-lg items-center justify-between px-4 md:max-w-3xl md:px-6 lg:max-w-5xl">
           <Link href="/hoy" aria-label="Inicio">
             <Logo compact className="text-2xl" />
           </Link>
@@ -75,7 +75,9 @@ export default async function ClientLayout({ children }: LayoutProps<"/">) {
           </div>
         ) : null}
       </header>
-      <main className="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24">{children}</main>
+      <main className="mx-auto w-full max-w-lg flex-1 px-4 pt-4 pb-24 md:max-w-3xl md:px-6 md:pt-6 lg:max-w-5xl">
+        {children}
+      </main>
       <ClientBottomNav />
       <OutboxSync />
     </div>

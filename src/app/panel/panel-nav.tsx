@@ -14,7 +14,9 @@ import {
   MessageSquare,
   Trophy,
   Flag,
+  Menu,
 } from "lucide-react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { BottomNav, SideNav, type NavItem } from "@/components/twj/nav";
 
@@ -43,8 +45,26 @@ export function PanelSideNav() {
 
 export function PanelBottomNav() {
   const items = useItems();
-  // En móvil, las 5 más usadas
-  // (Mensajes ya está en la cabecera)
-  const mobile = [items[0], items[1], items[2], items[4], items[5]].filter(Boolean) as NavItem[];
-  return <BottomNav items={mobile} className="lg:hidden" />;
+  // En el móvil, las 4 más usadas y «Más» con todas las demás (Mensajes ya está en la cabecera)
+  const mobile = [items[0], items[1], items[2], items[4], { href: "/panel/mas", label: "Más", icon: Menu }].filter(
+    Boolean,
+  ) as NavItem[];
+  return <BottomNav items={mobile} className="md:hidden" />;
+}
+
+/** Todas las secciones del panel, para «Más» en el móvil. */
+export function PanelMoreList() {
+  const items = useItems().filter((i) => i.href !== "/panel");
+  return (
+    <ul className="divide-y overflow-hidden rounded-xl border bg-card">
+      {items.map((item) => (
+        <li key={item.href}>
+          <Link href={item.href} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/50">
+            <item.icon className="size-5 text-muted-foreground" aria-hidden />
+            <span className="flex-1">{item.label}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
+  );
 }

@@ -178,7 +178,7 @@ export async function grantPeriodCredits(clientId: string, periodStart: string, 
     const { data } = await admin.rpc("feature_for_client", { p_client_id: clientId, p_feature: g.feature });
     const f = data?.[0];
     if (!f?.enabled || !f.limit_value) continue;
-    await admin.from("session_credits").upsert(
+    const { error } = await admin.from("session_credits").upsert(
       {
         client_id: clientId,
         credit_type: g.type,
@@ -189,6 +189,8 @@ export async function grantPeriodCredits(clientId: string, periodStart: string, 
       },
       { onConflict: "client_id,credit_type,period_start", ignoreDuplicates: true },
     );
+    // Que no vuelva a fallar en silencio: sin esto el cliente se queda sin sus sesiones
+    if (error) throw new Error(`No se han podido conceder los créditos (${g.type}): ${error.message}`);
   }
 }
 
