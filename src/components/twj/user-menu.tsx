@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { KeyRound, LogOut } from "lucide-react";
 import { signOut } from "@/features/auth/actions";
 import {
   DropdownMenu,
@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-/** Menú de la cuenta (arriba a la derecha): siempre a mano para cerrar sesión. */
+/** Menú de la cuenta (arriba a la derecha): siempre a mano para cambiar la contraseña y cerrar sesión. */
 export function UserMenu({
   name,
   email,
@@ -45,6 +45,11 @@ export function UserMenu({
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/auth/nueva-contrasena">
+            <KeyRound className="size-4" aria-hidden /> Cambiar contraseña
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem
           disabled={pending}
           onSelect={(e) => {

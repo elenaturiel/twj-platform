@@ -3,7 +3,7 @@ import Link from "next/link";
 import { requireStaff } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DigestToggle, SettingRow } from "@/features/config/settings-form";
+import { DigestToggle, SettingRow, SignupToggle } from "@/features/config/settings-form";
 
 export const metadata: Metadata = { title: "Ajustes" };
 
@@ -22,7 +22,7 @@ const EDITABLE: Record<string, string> = {
 export default async function SettingsPage() {
   const viewer = await requireStaff();
   const supabase = await createClient();
-  const [{ data: settings }, { data: pref }] = await Promise.all([
+  const [{ data: settings }, { data: pref }, { data: signup }] = await Promise.all([
     supabase.from("settings").select("key, value, description").in("key", Object.keys(EDITABLE)),
     supabase
       .from("notification_preferences")
@@ -31,6 +31,7 @@ export default async function SettingsPage() {
       .eq("type", "*")
       .eq("channel", "email")
       .maybeSingle(),
+    supabase.from("settings").select("value").eq("key", "access.public_signup").maybeSingle(),
   ]);
 
   return (
@@ -59,6 +60,14 @@ export default async function SettingsPage() {
               Privacidad (RGPD) y registro de actividad
             </Link>
           </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Altas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SignupToggle open={signup?.value === true} />
         </CardContent>
       </Card>
       <Card>

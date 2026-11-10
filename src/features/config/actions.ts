@@ -140,7 +140,9 @@ const SETTING_KEYS = [
   "billing.grace_days",
   "billing.manual_reminder_offsets",
   "billing.extra_session_price_cents",
+  "billing.vat_percent",
   "billing.max_total_discount_percent",
+  "access.public_signup",
   "notifications.digest_hour",
   "checkins.default_weekday",
 ] as const;
@@ -160,6 +162,12 @@ export async function saveSetting(key: string, rawValue: string): Promise<Config
   ) {
     return { ok: false, error: "Número no válido (formato +34…)." };
   }
+  if (key === "billing.vat_percent" && !(typeof value === "number" && value >= 0 && value <= 30)) {
+    return { ok: false, error: "Pon el IVA como número, por ejemplo 21." };
+  }
+  if (key === "access.public_signup" && typeof value !== "boolean") {
+    return { ok: false, error: "Valor no válido." };
+  }
   const supabase = await createClient();
   const { error } = await supabase
     .from("settings")
@@ -167,6 +175,7 @@ export async function saveSetting(key: string, rawValue: string): Promise<Config
     .eq("key", key);
   if (error) return { ok: false, error: "No se ha podido guardar." };
   revalidatePath("/panel/ajustes");
+  if (key === "access.public_signup") revalidatePath("/empezar", "layout");
   return { ok: true };
 }
 

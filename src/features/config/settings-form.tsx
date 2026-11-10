@@ -64,3 +64,24 @@ export function DigestToggle({ digest }: { digest: boolean }) {
     </Label>
   );
 }
+
+/** Alta abierta (cualquiera paga y entra) o solo por invitación (piden plaza y Jaime acepta). */
+export function SignupToggle({ open }: { open: boolean }) {
+  const [pending, start] = useTransition();
+  return (
+    <Label className="flex items-center gap-3 font-normal">
+      <Switch
+        defaultChecked={open}
+        disabled={pending}
+        onCheckedChange={(v) =>
+          start(async () => {
+            const r = await saveSetting("access.public_signup", String(v));
+            if (r.ok) toast.success(v ? "Alta abierta: cualquiera puede apuntarse y pagar" : "Solo por invitación");
+            else toast.error(r.error);
+          })
+        }
+      />
+      Cualquiera puede darse de alta desde la web (si está apagado, piden plaza y tú aceptas)
+    </Label>
+  );
+}
