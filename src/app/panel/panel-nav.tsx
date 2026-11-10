@@ -49,7 +49,7 @@ export function PanelBottomNav() {
   const mobile = [items[0], items[1], items[2], items[4], { href: "/panel/mas", label: "Más", icon: Menu }].filter(
     Boolean,
   ) as NavItem[];
-  return <BottomNav items={mobile} className="md:hidden" />;
+  return <BottomNav items={mobile} className="wide:hidden" />;
 }
 
 /** Todas las secciones del panel, para «Más» en el móvil. */

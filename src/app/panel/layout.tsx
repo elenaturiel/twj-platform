@@ -20,7 +20,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
 
   return (
     <div className="flex min-h-dvh">
-      <aside className="sticky top-0 hidden h-dvh w-52 shrink-0 flex-col gap-6 overflow-y-auto bg-sidebar p-4 text-sidebar-foreground md:flex lg:w-60">
+      <aside className="sticky top-0 hidden h-dvh w-52 shrink-0 flex-col gap-6 overflow-y-auto bg-sidebar p-4 text-sidebar-foreground lg:w-60 wide:flex">
         <Link href="/panel" className="px-3 pt-2">
           <Logo className="text-lg" />
         </Link>
@@ -38,8 +38,8 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/95 px-4 pt-[env(safe-area-inset-top)] backdrop-blur md:px-6 lg:px-8">
-          <Link href="/panel" className="md:hidden">
+        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-background/95 px-4 pt-[env(safe-area-inset-top)] backdrop-blur lg:px-8 wide:px-6">
+          <Link href="/panel" className="wide:hidden">
             <Logo compact className="text-2xl" />
           </Link>
           <div className="ml-auto flex items-center gap-1">
@@ -78,7 +78,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
             />
           </div>
         </header>
-        <main className="w-full flex-1 px-4 pt-6 pb-24 md:px-6 md:pb-10 lg:px-8">{children}</main>
+        <main className="w-full flex-1 px-4 pt-6 pb-24 lg:px-8 wide:px-6 wide:pb-10">{children}</main>
         <PanelBottomNav />
       </div>
     </div>

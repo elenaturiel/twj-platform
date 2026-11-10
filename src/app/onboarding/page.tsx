@@ -22,7 +22,7 @@ export default async function OnboardingPage() {
   ]);
 
   return (
-    <div className="mx-auto w-full max-w-lg px-4 py-6 md:max-w-2xl md:py-10">
+    <div className="mx-auto w-full max-w-lg px-4 py-6 wide:max-w-2xl wide:py-10">
       <div className="flex items-center justify-between">
         <Logo compact className="text-2xl" />
         <UserMenu name={viewer.fullName} email={viewer.email} />
