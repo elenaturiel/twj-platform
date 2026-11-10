@@ -16,11 +16,15 @@ test("Jaime guarda el IVA y abre o cierra el alta desde Ajustes", async ({ page 
   await toggle.click();
   await expect(page.getByText(/Alta abierta/).first()).toBeVisible();
   await expect
-    .poll(async () => (await db.from("settings").select("value").eq("key", "access.public_signup").single()).data?.value)
+    .poll(
+      async () => (await db.from("settings").select("value").eq("key", "access.public_signup").single()).data?.value,
+    )
     .toBe(true);
   await toggle.click();
   await expect
-    .poll(async () => (await db.from("settings").select("value").eq("key", "access.public_signup").single()).data?.value)
+    .poll(
+      async () => (await db.from("settings").select("value").eq("key", "access.public_signup").single()).data?.value,
+    )
     .toBe(false);
 });
 
