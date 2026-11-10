@@ -29,9 +29,16 @@ test("alta solo con invitación: solicita plaza, Jaime acepta, el cliente entra 
   const link = (await staff.locator("p.font-mono").innerText()).trim();
   expect(link).toContain("/auth/confirm?token_hash=");
 
-  // 3) La clienta abre el enlace, pone contraseña y queda dentro
+  // WhatsApp abre el enlace para la vista previa antes que la clienta: no debe gastarlo
+  const preview = await browser.newPage();
+  await preview.goto(link);
+  await expect(preview.getByRole("button", { name: "Continuar" })).toBeVisible();
+  await preview.close();
+
+  // 3) La clienta abre el enlace, pulsa Continuar, pone contraseña y queda dentro
   const client = await browser.newPage();
   await client.goto(link);
+  await client.getByRole("button", { name: "Continuar" }).click();
   await expect(client).toHaveURL(/nueva-contrasena/);
   await client
     .getByLabel(/contraseña/i)

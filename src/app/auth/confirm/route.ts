@@ -1,19 +1,10 @@
-import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { safeNextPath } from "@/lib/safe-redirect";
 
-// Enlaces de email con token_hash (invitaciones, confirmación de registro)
+// Enlaces de acceso (invitación, recuperación, confirmación). No se gasta el token aquí:
+// WhatsApp, el correo y los antivirus abren el enlace para la vista previa y lo
+// consumirían antes que la persona. Se pasa a una pantalla con botón que lo verifica.
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = request.nextUrl;
-  const tokenHash = searchParams.get("token_hash");
-  const type = searchParams.get("type") as EmailOtpType | null;
-  const next = safeNextPath(searchParams.get("next"), "/");
-
-  if (tokenHash && type) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
-  }
-  return NextResponse.redirect(`${origin}/login?error=link`);
+  const url = request.nextUrl.clone();
+  url.pathname = "/auth/acceso";
+  return NextResponse.redirect(url);
 }

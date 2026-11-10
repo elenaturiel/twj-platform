@@ -84,3 +84,20 @@ export async function signOut() {
   await supabase.auth.signOut();
   redirect("/login");
 }
+
+const ACCESS_TYPES = ["invite", "recovery", "signup", "magiclink", "email", "email_change"] as const;
+
+/** Verifica el enlace de acceso al pulsar «Continuar» (nunca al abrirlo: las vistas previas lo gastarían). */
+export async function verifyAccessLink(formData: FormData) {
+  const tokenHash = String(formData.get("token_hash") ?? "");
+  const type = String(formData.get("type") ?? "");
+  const next = safeNextPath(String(formData.get("next") ?? ""), "/");
+  if (!tokenHash || !(ACCESS_TYPES as readonly string[]).includes(type)) redirect("/login?error=link");
+  const supabase = await createClient();
+  const { error } = await supabase.auth.verifyOtp({
+    type: type as (typeof ACCESS_TYPES)[number],
+    token_hash: tokenHash,
+  });
+  if (error) redirect("/login?error=link");
+  redirect(next);
+}
