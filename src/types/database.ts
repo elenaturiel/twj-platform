@@ -523,6 +523,58 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"contact_comments": {
+                  Row: {
+                    "author_id": string | null,"body": string,"contact_id": string,"created_at": string,"id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "author_id"?: string | null,"body": string,"contact_id": string,"created_at"?: string,"id"?: string
+                  }
+                  Update: {
+                    "author_id"?: string | null,"body"?: string,"contact_id"?: string,"created_at"?: string,"id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "contact_comments_author_id_fkey"
+      columns: ["author_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "contact_comments_contact_id_fkey"
+      columns: ["contact_id"]
+isOneToOne: false
+      referencedRelation: "contacts"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"contacts": {
+                  Row: {
+                    "age": number | null,"allergy_notes": string | null,"availability_notes": string | null,"available_days": (number)[],"call_at": string | null,"client_id": string | null,"company": string | null,"created_at": string,"created_by": string | null,"email": string | null,"equipment": string | null,"equipment_notes": string | null,"experience": string | null,"full_name": string,"goal": string | null,"id": string,"injuries": string | null,"kind": string,"lost_reason": string | null,"next_followup_on": string | null,"notes": string | null,"phone": string | null,"plan_interest": string | null,"source": string | null,"status": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "age"?: number | null,"allergy_notes"?: string | null,"availability_notes"?: string | null,"available_days"?: (number)[],"call_at"?: string | null,"client_id"?: string | null,"company"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"equipment"?: string | null,"equipment_notes"?: string | null,"experience"?: string | null,"full_name": string,"goal"?: string | null,"id"?: string,"injuries"?: string | null,"kind"?: string,"lost_reason"?: string | null,"next_followup_on"?: string | null,"notes"?: string | null,"phone"?: string | null,"plan_interest"?: string | null,"source"?: string | null,"status"?: string,"updated_at"?: string
+                  }
+                  Update: {
+                    "age"?: number | null,"allergy_notes"?: string | null,"availability_notes"?: string | null,"available_days"?: (number)[],"call_at"?: string | null,"client_id"?: string | null,"company"?: string | null,"created_at"?: string,"created_by"?: string | null,"email"?: string | null,"equipment"?: string | null,"equipment_notes"?: string | null,"experience"?: string | null,"full_name"?: string,"goal"?: string | null,"id"?: string,"injuries"?: string | null,"kind"?: string,"lost_reason"?: string | null,"next_followup_on"?: string | null,"notes"?: string | null,"phone"?: string | null,"plan_interest"?: string | null,"source"?: string | null,"status"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "contacts_client_id_fkey"
+      columns: ["client_id"]
+isOneToOne: false
+      referencedRelation: "clients"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "contacts_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"conversation_reads": {
                   Row: {
                     "conversation_id": string,"last_read_at": string,"profile_id": string

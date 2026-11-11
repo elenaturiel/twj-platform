@@ -18,6 +18,12 @@ export default async function NewClientPage({ searchParams }: PageProps<"/panel/
   return (
     <div className="mx-auto max-w-6xl space-y-5">
       <h1 className="text-3xl font-extrabold">Nuevo cliente</h1>
+      {str(sp.contacto) ? (
+        <p className="max-w-xl rounded-lg border bg-muted/40 p-3 text-sm">
+          Viene de Contactos: lo que apuntaste en la llamada (objetivo, nivel, lesiones, días, alergias…) pasa a su
+          ficha, y tus notas quedan en Notas.
+        </p>
+      ) : null}
       <NewClientForm
         defaults={{
           name: str(sp.nombre),
@@ -25,6 +31,7 @@ export default async function NewClientPage({ searchParams }: PageProps<"/panel/
           phone: str(sp.telefono),
           planKey: str(sp.plan),
           leadId: str(sp.solicitud),
+          contactId: str(sp.contacto),
         }}
         plans={(plans ?? []).map((p) => ({
           key: p.key,

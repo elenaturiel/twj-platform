@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StudentCardReview } from "@/features/clients/staff-forms";
 import { formatDate } from "@/features/clients/ui";
 import { AccessRequestRow } from "@/features/clients/access-requests";
+import { todayInMadrid } from "@/lib/dates";
+import { KIND_LABELS, OPEN_STATUSES, type ContactKind, type ContactStatus } from "@/domain/contacts/contacts";
 
 export const metadata: Metadata = { title: "Pendientes" };
 
@@ -22,6 +24,7 @@ export default async function PendingPage() {
     { data: checkins },
     { data: requests },
     { data: plans },
+    { data: followups },
   ] = await Promise.all([
     supabase
       .from("student_verifications")
@@ -56,11 +59,39 @@ export default async function PendingPage() {
       .in("status", ["new", "contacted"])
       .order("created_at", { ascending: false }),
     supabase.from("plans").select("key, name"),
+    supabase
+      .from("contacts")
+      .select("id, full_name, kind, next_followup_on")
+      .in("status", OPEN_STATUSES as ContactStatus[])
+      .lte("next_followup_on", todayInMadrid())
+      .order("next_followup_on"),
   ]);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <h1 className="text-3xl font-extrabold">Pendientes</h1>
+
+      {followups?.length ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Contactos a los que escribir hoy ({followups.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y">
+              {followups.map((c) => (
+                <li key={c.id} className="flex items-center justify-between gap-3 py-2 text-sm">
+                  <Link href={`/panel/contactos/${c.id}`} className="font-medium hover:underline">
+                    {c.full_name}
+                  </Link>
+                  <span className="text-muted-foreground">
+                    {KIND_LABELS[c.kind as ContactKind]} · {formatDate(c.next_followup_on)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>

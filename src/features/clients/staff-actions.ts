@@ -17,6 +17,7 @@ import { applySubscriptionPayment } from "@/features/billing/fulfillment";
 import { recomputeClientSubscription } from "@/features/billing/squads.server";
 import { ensureStripeCustomer, ensureStripePrice } from "@/features/billing/stripe-sync";
 import { buildSignupQuote } from "@/features/billing/quote.server";
+import { contactToIntake } from "@/domain/contacts/contacts";
 
 export type StaffResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -88,6 +89,8 @@ const newClientSchema = z.object({
   modalities: z.array(z.enum(["gym", "functional", "running", "hyrox"])).default([]),
   phone: z.string().trim().max(30).optional(),
   leadId: z.uuid().optional(),
+  // Viene de Contactos: se copia a su ficha lo apuntado en la llamada
+  contactId: z.uuid().optional(),
 });
 
 /**
@@ -131,7 +134,13 @@ export async function createClientByStaff(
     .select("id")
     .single();
   if (error || !client) return { ok: false, error: "No se ha podido crear el cliente." };
-  await admin.from("client_intake").insert({ client_id: client.id });
+  const { data: contact } = d.contactId
+    ? await admin.from("contacts").select("*").eq("id", d.contactId).maybeSingle()
+    : { data: null };
+  await admin.from("client_intake").insert({
+    client_id: client.id,
+    ...(contact ? contactToIntake(contact as Parameters<typeof contactToIntake>[0]) : {}),
+  });
 
   // Importe: precio de lista con descuentos automáticos (o el pactado)
   let listCents: number;
@@ -179,6 +188,21 @@ export async function createClientByStaff(
   });
 
   if (d.leadId) await admin.from("leads").update({ status: "won", client_id: client.id }).eq("id", d.leadId);
+  if (contact) {
+    await admin
+      .from("contacts")
+      .update({ status: "client", client_id: client.id, next_followup_on: null })
+      .eq("id", contact.id);
+    if (contact.notes)
+      await admin.from("client_notes").insert({
+        client_id: client.id,
+        author_id: viewer.id,
+        body: `Notas de la llamada:\n${contact.notes}`,
+        pinned: true,
+      });
+    revalidatePath("/panel/contactos");
+    revalidatePath(`/panel/contactos/${contact.id}`);
+  }
   if (d.billingMode === "stripe") await sendCheckoutLink(client.id);
   revalidatePath("/panel/clientes");
   revalidatePath("/panel/pendientes");

@@ -13,7 +13,14 @@ import { MODALITY_LABELS } from "./ui";
 
 type PlanOption = { key: string; name: string; priceCents: number | null; annualAllowed: boolean };
 
-type Defaults = { name?: string; email?: string; phone?: string; planKey?: string; leadId?: string };
+type Defaults = {
+  name?: string;
+  email?: string;
+  phone?: string;
+  planKey?: string;
+  leadId?: string;
+  contactId?: string;
+};
 
 export function NewClientForm({ plans, defaults = {} }: { plans: PlanOption[]; defaults?: Defaults }) {
   const router = useRouter();
@@ -43,6 +50,7 @@ export function NewClientForm({ plans, defaults = {} }: { plans: PlanOption[]; d
         modalities: modalities as never,
         phone: String(f.get("phone") ?? "") || undefined,
         leadId: defaults.leadId,
+        contactId: defaults.contactId,
       });
       if (!res.ok) {
         toast.error(res.error);

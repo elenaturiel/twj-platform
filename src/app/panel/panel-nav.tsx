@@ -3,6 +3,7 @@
 import {
   Activity,
   BookOpen,
+  Contact,
   CalendarDays,
   CreditCard,
   Home,
@@ -25,6 +26,7 @@ function useItems(): NavItem[] {
   return [
     { href: "/panel", label: t("dashboard"), icon: Home, exact: true },
     { href: "/panel/clientes", label: t("clients"), icon: Users },
+    { href: "/panel/contactos", label: t("contacts"), icon: Contact },
     { href: "/panel/pendientes", label: t("pending"), icon: Inbox },
     { href: "/panel/chat", label: t("chat"), icon: MessageSquare },
     { href: "/panel/agenda", label: t("agenda"), icon: CalendarDays },
@@ -46,9 +48,11 @@ export function PanelSideNav() {
 export function PanelBottomNav() {
   const items = useItems();
   // En el móvil, las 4 más usadas y «Más» con todas las demás (Mensajes ya está en la cabecera)
-  const mobile = [items[0], items[1], items[2], items[4], { href: "/panel/mas", label: "Más", icon: Menu }].filter(
-    Boolean,
-  ) as NavItem[];
+  const pick = ["/panel", "/panel/clientes", "/panel/pendientes", "/panel/agenda"];
+  const mobile: NavItem[] = [
+    ...pick.map((href) => items.find((i) => i.href === href)).filter((i): i is NavItem => Boolean(i)),
+    { href: "/panel/mas", label: "Más", icon: Menu },
+  ];
   return <BottomNav items={mobile} className="wide:hidden" />;
 }
 
