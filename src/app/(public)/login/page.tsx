@@ -5,7 +5,6 @@ import { AuthShell } from "@/features/auth/auth-shell";
 import { LoginForm } from "@/features/auth/login-form";
 import { getViewer, homePathFor } from "@/lib/auth/dal";
 import { safeNextPath } from "@/lib/safe-redirect";
-import { googleLoginEnabled } from "@/lib/auth/providers";
 
 export const metadata: Metadata = { title: "Entrar" };
 
@@ -23,7 +22,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
           elegiste.
         </p>
       ) : null}
-      <LoginForm next={typeof next === "string" ? next : undefined} google={await googleLoginEnabled()} />
+      <LoginForm next={typeof next === "string" ? next : undefined} />
     </AuthShell>
   );
 }

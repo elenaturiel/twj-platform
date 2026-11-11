@@ -49,17 +49,6 @@ export async function sendMagicLink(_: AuthFormState, formData: FormData): Promi
   return { ok: true, message: "auth.magicLinkSent" };
 }
 
-export async function signInWithGoogle(formData: FormData) {
-  const next = safeNextPath(formData.get("next")?.toString(), "/");
-  const supabase = await createClient();
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: `${await siteUrl()}/auth/callback?next=${encodeURIComponent(next)}` },
-  });
-  if (error || !data.url) redirect("/login?error=google");
-  redirect(data.url);
-}
-
 export async function requestPasswordReset(_: AuthFormState, formData: FormData): Promise<AuthFormState> {
   const email = emailSchema.safeParse(formData.get("email"));
   if (!email.success) return { error: "auth.emailInvalid" };

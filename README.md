@@ -98,7 +98,7 @@ tests/e2e/          Playwright
 3. **Auth → URL Configuration**: Site URL `https://app.trainwithjaime.es`. En Redirect URLs añade `https://app.trainwithjaime.es/**` y el patrón de previews de Vercel (`https://*-<equipo>.vercel.app/**`).
 4. **Auth → Providers**:
    - Email: activado, con «Confirm email» activado.
-   - Google: ver §4.5.
+   - Google (solo para Calendar/Meet de la agenda): ver §4.5. El inicio de sesión es con email y contraseña; no hay entrada con Google.
 5. **Auth → SMTP**: usa Resend (host `smtp.resend.com`, usuario `resend`, contraseña = API key). Así los emails de acceso no dependen del límite del SMTP de Supabase.
 6. **Auth → Email Templates**: tradúcelos al español con el tono de TWJ. La invitación debe apuntar a `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=invite&next=/auth/nueva-contrasena`.
 7. **Database → Extensions**: activa `pg_cron` y `pg_net` (para las tareas programadas, §4.7).
@@ -129,15 +129,13 @@ tests/e2e/          Playwright
 3. Si hay un registro `CAA`, debe permitir `letsencrypt.org`.
 4. Como la web actual ya está en Vercel, si el dominio se gestiona desde el mismo equipo de Vercel basta con añadir el subdominio al proyecto nuevo.
 
-### 4.5 Google (login, y Calendar/Meet para la agenda)
+### 4.5 Google (Calendar/Meet para la agenda)
 
 1. Google Cloud Console → crea un proyecto → **OAuth consent screen** (External, en español, con logo y dominio `trainwithjaime.es`). Activa la **Google Calendar API**.
 2. **Credentials → OAuth client ID** (Web). «Authorized redirect URIs»:
-   - `https://<ref>.supabase.co/auth/v1/callback` (login con Google)
    - `https://app.trainwithjaime.es/api/google/callback` (Calendar/Meet de Jaime)
-3. Login: pega el Client ID y el Secret en Supabase → Auth → Providers → Google.
-4. Agenda: en Vercel, `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` (los mismos). Luego Jaime entra en Panel → Agenda → Disponibilidad → «Conectar Google Calendar». El token se guarda cifrado en Supabase Vault.
-5. Como Jaime usa una cuenta @gmail, la app OAuth tiene que estar **en producción**; en modo «testing» el token caduca a los 7 días. Sin Google, la agenda funciona igual con el enlace fijo de Meet que se pone en Disponibilidad.
+3. Agenda: en Vercel, `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET`. Luego Jaime entra en Panel → Agenda → Disponibilidad → «Conectar Google Calendar». El token se guarda cifrado en Supabase Vault.
+4. Como Jaime usa una cuenta @gmail, la app OAuth tiene que estar **en producción**; en modo «testing» el token caduca a los 7 días. Sin Google, la agenda funciona igual con el enlace fijo de Meet que se pone en Disponibilidad.
 
 ### 4.6 Web Push (Fase 6)
 

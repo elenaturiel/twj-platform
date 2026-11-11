@@ -81,6 +81,9 @@ test("Excel: Jaime descarga la plantilla, la rellena y sube entreno y dieta de u
   const monday = new Date(Date.UTC(year, 0, 1));
   while (monday.getUTCDay() !== 1) monday.setUTCDate(monday.getUTCDate() + 1);
   const weekStart = monday.toISOString().slice(0, 10);
+  const week2 = new Date(monday.getTime() + 7 * 864e5).toISOString().slice(0, 10);
+  // Semanas libres para el cliente de prueba (de ejecuciones anteriores podría haber menú)
+  await db.from("meal_plans").delete().eq("client_id", client!.id).in("week_start", [weekStart, week2]);
   await dieta.getByLabel("Semana 1 empieza").fill(weekStart);
   await dieta.getByRole("button", { name: "Importar dieta" }).click();
   await expect(page).toHaveURL(new RegExp(`/panel/clientes/${client!.id}/nutricion`), { timeout: 20_000 });
