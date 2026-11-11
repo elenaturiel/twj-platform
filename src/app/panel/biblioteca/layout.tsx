@@ -20,7 +20,7 @@ export default async function LibraryLayout({ children }: LayoutProps<"/panel/bi
           Plantillas de entreno
         </Link>
         <Link href="/panel/importar" className="-mb-px border-b-2 border-transparent pb-2 hover:border-current">
-          Importar Excel
+          Importar Excel (entreno y dieta)
         </Link>
         <Link
           href="/panel/biblioteca/alimentos"

@@ -2,9 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Download } from "lucide-react";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,83 +11,76 @@ import {
   IMPORT_FIELDS,
   parseWorkoutRows,
   suggestMapping,
-  TEMPLATE_HEADERS,
-  TEMPLATE_ROWS,
   type ColumnMapping,
   type ImportField,
 } from "@/domain/training/import";
 import { importParsedBlocks } from "../staff-actions";
 
-type Sheet = { fileName: string; headers: string[]; rows: Record<string, unknown>[] };
+export type Sheet = { fileName: string; headers: string[]; rows: Record<string, unknown>[] };
 
-function downloadTemplate() {
-  const ws = XLSX.utils.json_to_sheet(TEMPLATE_ROWS, { header: TEMPLATE_HEADERS });
-  ws["!cols"] = TEMPLATE_HEADERS.map((h) => ({ wch: Math.max(12, h.length + 2) }));
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Rutinas");
-  XLSX.writeFile(wb, "plantilla-rutinas-twj.xlsx");
-}
-
-/** Asistente: subir Excel → asignar columnas → validar fila a fila → importar. */
+/** Entreno: columnas (automáticas con la plantilla) → validar fila a fila → importar. */
 export function ImportWizard({
   clients,
   defaultClientId,
+  sheet,
 }: {
   clients: { id: string; name: string }[];
   defaultClientId?: string;
+  sheet: Sheet;
 }) {
   const router = useRouter();
-  const [sheet, setSheet] = useState<Sheet | null>(null);
-  const [mapping, setMapping] = useState<ColumnMapping>({});
+  const [mapping, setMapping] = useState<ColumnMapping>(() => suggestMapping(sheet.headers));
   const [target, setTarget] = useState<string>(defaultClientId ?? "template");
   const [startsOn, setStartsOn] = useState("");
   const [pending, start] = useTransition();
 
-  const result = useMemo(() => (sheet ? parseWorkoutRows(sheet.rows, mapping) : null), [sheet, mapping]);
-
-  async function onFile(file: File) {
-    const wb = XLSX.read(await file.arrayBuffer(), { cellDates: false });
-    const ws = wb.Sheets[wb.SheetNames[0]!]!;
-    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "", raw: false });
-    const headers = (XLSX.utils.sheet_to_json<string[]>(ws, { header: 1 })[0] ?? []).map(String).filter(Boolean);
-    setSheet({ fileName: file.name, headers, rows });
-    setMapping(suggestMapping(headers));
-  }
+  const result = useMemo(() => parseWorkoutRows(sheet.rows, mapping), [sheet, mapping]);
+  // Con la plantilla todas las columnas se asignan solas: el paso se pliega
+  const autoMapped = (Object.keys(IMPORT_FIELDS) as ImportField[]).every(
+    (f) => !IMPORT_FIELDS[f].required || mapping[f],
+  );
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">1. Sube el Excel</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm">
-          <p className="text-muted-foreground">
-            Una fila por ejercicio. Si tus columnas se llaman distinto, no pasa nada: las asignas en el paso 2.
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
-            <Input
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              className="max-w-xs"
-              onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-              aria-label="Archivo Excel"
-            />
-            <Button type="button" variant="outline" size="sm" onClick={downloadTemplate}>
-              <Download className="size-4" /> Descargar plantilla de ejemplo
-            </Button>
+      {autoMapped ? (
+        <details className="rounded-xl border bg-card px-4 py-3 text-sm">
+          <summary className="cursor-pointer text-muted-foreground">
+            Columnas reconocidas automáticamente (ábrelo solo si tu Excel tiene otros nombres)
+          </summary>
+          <div className="mt-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Columnas</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {(Object.keys(IMPORT_FIELDS) as ImportField[]).map((field) => (
+                  <div key={field} className="space-y-1">
+                    <Label className="text-xs">
+                      {IMPORT_FIELDS[field].label}
+                      {IMPORT_FIELDS[field].required ? " *" : ""}
+                    </Label>
+                    <select
+                      className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                      value={mapping[field] ?? ""}
+                      onChange={(e) => setMapping((m) => ({ ...m, [field]: e.target.value || undefined }))}
+                    >
+                      <option value="">— (no usar)</option>
+                      {sheet.headers.map((h) => (
+                        <option key={h} value={h}>
+                          {h}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
           </div>
-          {sheet ? (
-            <p>
-              <strong>{sheet.fileName}</strong>: {sheet.rows.length} filas, {sheet.headers.length} columnas.
-            </p>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      {sheet ? (
+        </details>
+      ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">2. Asigna las columnas</CardTitle>
+            <CardTitle className="text-base">Columnas</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {(Object.keys(IMPORT_FIELDS) as ImportField[]).map((field) => (
@@ -114,12 +105,12 @@ export function ImportWizard({
             ))}
           </CardContent>
         </Card>
-      ) : null}
+      )}
 
-      {result ? (
+      {
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">3. Revisión</CardTitle>
+            <CardTitle className="text-base">Revisión del entreno</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             {result.errors.length ? (
@@ -186,7 +177,7 @@ export function ImportWizard({
                           blocks: result.blocks,
                           clientId: target === "template" ? null : target,
                           startsOn: startsOn || null,
-                          fileName: sheet!.fileName,
+                          fileName: sheet.fileName,
                           rowCount: result.rowCount,
                         });
                         if (!r.ok) return void toast.error(r.error);
@@ -208,7 +199,7 @@ export function ImportWizard({
             )}
           </CardContent>
         </Card>
-      ) : null}
+      }
     </div>
   );
 }

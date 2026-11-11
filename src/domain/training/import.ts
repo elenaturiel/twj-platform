@@ -29,7 +29,7 @@ export const IMPORT_FIELDS = {
 export type ImportField = keyof typeof IMPORT_FIELDS;
 export type ColumnMapping = Partial<Record<ImportField, string>>; // campo → cabecera del Excel
 
-const normalize = (s: string) =>
+export const normalize = (s: string) =>
   s
     .toLowerCase()
     .normalize("NFD")
@@ -72,7 +72,7 @@ export function suggestMapping(headers: string[]): ColumnMapping {
   return mapping;
 }
 
-const DAY_ALIASES: Record<string, number> = {
+export const DAY_ALIASES: Record<string, number> = {
   lunes: 0,
   l: 0,
   lu: 0,

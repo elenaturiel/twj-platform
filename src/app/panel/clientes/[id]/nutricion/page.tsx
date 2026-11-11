@@ -76,6 +76,9 @@ export default async function ClientNutrition({ params, searchParams }: PageProp
         <Button asChild size="sm" variant="outline">
           <Link href={`${base}?semana=${addDays(week, 7)}`}>Semana siguiente →</Link>
         </Button>
+        <Link href={`/panel/importar?cliente=${id}`} className="text-sm underline">
+          Importar dieta desde Excel
+        </Link>
         {intake?.food_budget_cents ? (
           <Badge variant="secondary" className="ml-auto">
             Presupuesto: {(intake.food_budget_cents / 100).toFixed(0)} €/
