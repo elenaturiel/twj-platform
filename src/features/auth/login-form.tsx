@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { sendMagicLink, signInWithGoogle, signInWithPassword } from "./actions";
 import { FormMessage } from "./form-message";
 
-export function LoginForm({ next }: { next?: string }) {
+export function LoginForm({ next, google = false }: { next?: string; google?: boolean }) {
   const t = useTranslations("auth");
   const [loginState, loginAction, loginPending] = useActionState(signInWithPassword, undefined);
   const [magicState, magicAction, magicPending] = useActionState(sendMagicLink, undefined);
@@ -49,18 +49,22 @@ export function LoginForm({ next }: { next?: string }) {
         <FormMessage state={magicState} />
       </form>
 
-      <div className="flex items-center gap-3">
-        <Separator className="flex-1" />
-        <span className="text-xs text-muted-foreground">{t("or")}</span>
-        <Separator className="flex-1" />
-      </div>
+      {google ? (
+        <>
+          <div className="flex items-center gap-3">
+            <Separator className="flex-1" />
+            <span className="text-xs text-muted-foreground">{t("or")}</span>
+            <Separator className="flex-1" />
+          </div>
 
-      <form action={signInWithGoogle}>
-        <input type="hidden" name="next" value={next ?? ""} />
-        <Button type="submit" variant="outline" className="w-full">
-          {t("google")}
-        </Button>
-      </form>
+          <form action={signInWithGoogle}>
+            <input type="hidden" name="next" value={next ?? ""} />
+            <Button type="submit" variant="outline" className="w-full">
+              {t("google")}
+            </Button>
+          </form>
+        </>
+      ) : null}
 
       <p className="text-center text-sm text-muted-foreground">
         {t("noAccount")}{" "}
