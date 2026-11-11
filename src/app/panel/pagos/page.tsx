@@ -7,7 +7,7 @@ import { formatEuros } from "@/lib/money";
 import { addDays } from "@/domain/billing/renewal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { METHOD_LABELS, StatusBadge, formatDate } from "@/features/clients/ui";
+import { BILLING_MODE_LABELS, METHOD_LABELS, StatusBadge, formatDate } from "@/features/clients/ui";
 
 export const metadata: Metadata = { title: "Pagos" };
 
@@ -45,7 +45,9 @@ function SubTable({ rows }: { rows: DueRow[] }) {
             <TableCell>
               {formatDate(s.current_period_end)} {s.status === "past_due" ? <StatusBadge status="past_due" /> : null}
             </TableCell>
-            <TableCell className="hidden sm:table-cell">{s.billing_mode === "stripe" ? "Stripe" : "Manual"}</TableCell>
+            <TableCell className="hidden sm:table-cell">
+              {BILLING_MODE_LABELS[s.billing_mode] ?? s.billing_mode}
+            </TableCell>
             <TableCell className="text-right tabular-nums">{formatEuros(s.amount_cents)}</TableCell>
           </TableRow>
         ))}

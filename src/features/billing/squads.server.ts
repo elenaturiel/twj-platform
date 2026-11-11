@@ -40,6 +40,8 @@ export async function recomputeClientSubscription(clientId: string) {
     .in("status", ["active", "past_due"])
     .maybeSingle();
   if (!sub?.plans) return;
+  // Colaboración: no paga, no hay cuota que recalcular
+  if (sub.billing_mode === "collab") return;
 
   const { data: redemptions } = await admin
     .from("discount_redemptions")

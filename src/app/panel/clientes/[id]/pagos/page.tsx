@@ -4,8 +4,8 @@ import { formatEuros } from "@/lib/money";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ManualPaymentForm, SendCheckoutButton } from "@/features/clients/staff-forms";
-import { METHOD_LABELS, StatusBadge, formatDate } from "@/features/clients/ui";
+import { EndCollaborationButton, ManualPaymentForm, SendCheckoutButton } from "@/features/clients/staff-forms";
+import { BILLING_MODE_LABELS, METHOD_LABELS, StatusBadge, formatDate } from "@/features/clients/ui";
 
 export default async function ClientPayments({ params }: PageProps<"/panel/clientes/[id]/pagos">) {
   const { id } = await params;
@@ -46,7 +46,7 @@ export default async function ClientPayments({ params }: PageProps<"/panel/clien
             <>
               <p>
                 {sub.plans?.name} · {sub.billing_interval === "year" ? "anual" : "mensual"} ·{" "}
-                {sub.billing_mode === "stripe" ? "Stripe (automático)" : "Manual"}
+                {sub.billing_mode === "stripe" ? "Stripe (automático)" : BILLING_MODE_LABELS[sub.billing_mode]}
               </p>
               <p className="text-2xl font-extrabold tabular-nums">{formatEuros(sub.amount_cents)}</p>
               <p className="text-muted-foreground">Precio de lista: {formatEuros(sub.list_price_cents)}</p>
@@ -55,14 +55,22 @@ export default async function ClientPayments({ params }: PageProps<"/panel/clien
                   {b.label}: −{formatEuros(b.amount_cents)}
                 </p>
               ))}
-              <p>
-                Periodo: {formatDate(sub.current_period_start)} → {formatDate(sub.current_period_end)}
-              </p>
+              {sub.billing_mode === "collab" ? (
+                <p className="rounded-lg bg-muted/50 p-2">
+                  Colaboración: no paga. Plan activo desde el {formatDate(sub.current_period_start)}, sin renovaciones
+                  ni avisos de pago.
+                </p>
+              ) : (
+                <p>
+                  Periodo: {formatDate(sub.current_period_start)} → {formatDate(sub.current_period_end)}
+                </p>
+              )}
               {sub.grace_until ? <p className="text-destructive">Gracia hasta {formatDate(sub.grace_until)}</p> : null}
               <div className="flex flex-wrap gap-2 pt-2">
                 {sub.billing_mode === "manual" && sub.status !== "pending_payment" ? (
                   <SendCheckoutButton clientId={id} label="Pasar a pago automático (Stripe)" />
                 ) : null}
+                {sub.billing_mode === "collab" ? <EndCollaborationButton clientId={id} /> : null}
                 {sub.billing_mode === "stripe" && sub.status === "pending_payment" ? (
                   <SendCheckoutButton clientId={id} label="Reenviar enlace de pago" />
                 ) : null}
@@ -81,6 +89,7 @@ export default async function ClientPayments({ params }: PageProps<"/panel/clien
           </CardHeader>
           <CardContent>
             <ManualPaymentForm
+              clientId={id}
               subscriptionId={sub.id}
               defaultAmountEuros={sub.amount_cents / 100}
               today={todayInMadrid()}

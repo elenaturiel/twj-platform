@@ -107,7 +107,9 @@ export default async function MyPlanPage({ searchParams }: PageProps<"/perfil/pl
                 </p>
               ) : null}
               <p className="text-muted-foreground">
-                Cobro: {sub.billing_mode === "stripe" ? "tarjeta (automático)" : "manual (Bizum/transferencia)"}
+                {sub.billing_mode === "collab"
+                  ? "Colaboración con Jaime: no tienes cuota."
+                  : `Cobro: ${sub.billing_mode === "stripe" ? "tarjeta (automático)" : "manual (Bizum/transferencia)"}`}
               </p>
               {sub.billing_mode === "stripe" ? (
                 <form action={openBillingPortal}>

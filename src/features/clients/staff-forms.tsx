@@ -18,6 +18,8 @@ import {
   signedFileUrl,
   updateClientAdmin,
   type StaffResult,
+  endCollaboration,
+  setCollaboration,
 } from "./staff-actions";
 import { MODALITY_LABELS } from "./ui";
 
@@ -35,11 +37,13 @@ function useAction() {
 const selectCls = "border-input bg-background h-9 w-full rounded-md border px-2 text-sm";
 
 export function ManualPaymentForm({
+  clientId,
   subscriptionId,
   defaultAmountEuros,
   today,
   isFirst,
 }: {
+  clientId: string;
   subscriptionId: string;
   defaultAmountEuros: number;
   today: string;
@@ -47,6 +51,47 @@ export function ManualPaymentForm({
 }) {
   const { pending, run } = useAction();
   const [custom, setCustom] = useState(false);
+  const [method, setMethod] = useState("bizum");
+  const [note, setNote] = useState("");
+
+  const methodSelect = (
+    <div className="space-y-1">
+      <Label htmlFor="method">Método</Label>
+      <select
+        id="method"
+        name="method"
+        className={selectCls}
+        value={method}
+        onChange={(e) => setMethod(e.target.value)}
+      >
+        <option value="bizum">Bizum</option>
+        <option value="transfer">Transferencia</option>
+        <option value="cash">Efectivo</option>
+        <option value="other">Otro</option>
+        <option value="collab">Colaboración (no paga)</option>
+      </select>
+    </div>
+  );
+
+  if (method === "collab")
+    return (
+      <div className="space-y-3">
+        <div className="grid gap-3 sm:grid-cols-3">{methodSelect}</div>
+        <p className="rounded-lg border bg-muted/40 p-3 text-sm">
+          No paga, pero es cliente igual: plan activo, sus directos y videollamadas de cada mes y acceso a todo. No
+          tiene renovaciones ni avisos de pago. Puedes quitarlo cuando quieras.
+        </p>
+        <Input
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Acuerdo (opcional): contenido en Instagram a cambio, marca…"
+          aria-label="Acuerdo de la colaboración"
+        />
+        <Button type="button" disabled={pending} onClick={() => run(() => setCollaboration(clientId, note))}>
+          {pending ? "Guardando…" : "Marcar como colaboración"}
+        </Button>
+      </div>
+    );
 
   return (
     <form
@@ -57,7 +102,7 @@ export function ManualPaymentForm({
         run(() =>
           registerManualPayment({
             subscriptionId,
-            method: f.get("method") as "bizum",
+            method: method as "bizum",
             amountEuros: Number(String(f.get("amount")).replace(",", ".")),
             paidOn: String(f.get("paidOn")),
             periodStart: custom ? String(f.get("periodStart")) : "",
@@ -68,15 +113,7 @@ export function ManualPaymentForm({
       }}
     >
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className="space-y-1">
-          <Label htmlFor="method">Método</Label>
-          <select id="method" name="method" className={selectCls}>
-            <option value="bizum">Bizum</option>
-            <option value="transfer">Transferencia</option>
-            <option value="cash">Efectivo</option>
-            <option value="other">Otro</option>
-          </select>
-        </div>
+        {methodSelect}
         <div className="space-y-1">
           <Label htmlFor="amount">Importe (€)</Label>
           <Input
@@ -115,6 +152,25 @@ export function ManualPaymentForm({
         {pending ? "Registrando…" : isFirst ? "Registrar primer pago y activar" : "Registrar pago"}
       </Button>
     </form>
+  );
+}
+
+export function EndCollaborationButton({ clientId }: { clientId: string }) {
+  const { pending, run } = useAction();
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      disabled={pending}
+      onClick={() => {
+        if (confirm("¿Deja de ser colaboración? Vuelve al cobro manual con su precio y vence hoy.")) {
+          run(() => endCollaboration(clientId));
+        }
+      }}
+    >
+      {pending ? "Guardando…" : "Quitar colaboración (pasa a pagar)"}
+    </Button>
   );
 }
 

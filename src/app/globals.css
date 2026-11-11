@@ -5,7 +5,11 @@
 
 @custom-variant dark (&:is(.dark *));
 /* Tablet u ordenador: menú lateral como en escritorio. La altura mínima deja fuera el móvil en horizontal. */
-@custom-variant wide (@media (width >= 37.5rem) and (height >= 30rem));
+@custom-variant wide {
+  @media (min-width: 37.5rem) and (min-height: 30rem) {
+    @slot;
+  }
+}
 
 @theme inline {
   --color-background: var(--background);

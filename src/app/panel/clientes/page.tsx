@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MODALITY_LABELS, STATUS_LABELS, StatusBadge, formatDate } from "@/features/clients/ui";
+import { BILLING_MODE_LABELS, MODALITY_LABELS, STATUS_LABELS, StatusBadge, formatDate } from "@/features/clients/ui";
 
 export const metadata: Metadata = { title: "Clientes" };
 
@@ -56,6 +56,7 @@ export default async function ClientsPage({ searchParams }: PageProps<"/panel/cl
       options: [
         ["stripe", "Stripe"],
         ["manual", "Manual"],
+        ["collab", "Colaboración"],
       ] as const,
     },
     { name: "modalidad", label: "Modalidad", value: modalidad, options: Object.entries(MODALITY_LABELS) },
@@ -152,7 +153,7 @@ export default async function ClientsPage({ searchParams }: PageProps<"/panel/cl
                       <StatusBadge status={c.status} />
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      {c.billing_mode === "stripe" ? "Stripe" : "Manual"}
+                      {BILLING_MODE_LABELS[c.billing_mode] ?? c.billing_mode}
                       {sub ? (
                         <span className="block text-xs text-muted-foreground">
                           {formatEuros(sub.amount_cents)}/{sub.billing_interval === "year" ? "año" : "mes"}

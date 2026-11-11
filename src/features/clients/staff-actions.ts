@@ -13,7 +13,7 @@ import { sendEmail } from "@/lib/email/send";
 import { todayInMadrid } from "@/lib/dates";
 import { nextManualPeriod } from "@/domain/billing/renewal";
 import type { BillingInterval } from "@/domain/billing/types";
-import { applySubscriptionPayment } from "@/features/billing/fulfillment";
+import { applySubscriptionPayment, grantPeriodCredits } from "@/features/billing/fulfillment";
 import { recomputeClientSubscription } from "@/features/billing/squads.server";
 import { ensureStripeCustomer, ensureStripePrice } from "@/features/billing/stripe-sync";
 import { buildSignupQuote } from "@/features/billing/quote.server";
@@ -264,6 +264,111 @@ export async function registerManualPayment(input: z.input<typeof paymentSchema>
   );
   revalidatePath(`/panel/clientes/${sub.client_id}`, "layout");
   return { ok: true, message: `Pago registrado. Cubre ${period.start} → ${period.end}.` };
+}
+
+/**
+ * Colaboración: el cliente no paga (acuerdo con Jaime) pero sigue siendo cliente con
+ * su plan, sus créditos del mes y acceso. Sin cuota, sin renovaciones ni avisos de pago.
+ */
+export async function setCollaboration(clientId: string, note?: string): Promise<StaffResult> {
+  const viewer = await requireScope("billing");
+  if (!z.uuid().safeParse(clientId).success) return { ok: false, error: "Cliente no válido." };
+  const admin = createAdminClient();
+  const { data: sub } = await admin
+    .from("subscriptions")
+    .select("id, status, billing_mode, list_price_cents, current_period_start, stripe_subscription_id, started_at")
+    .eq("client_id", clientId)
+    .in("status", ["pending_payment", "active", "past_due", "paused"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!sub) return { ok: false, error: "Este cliente no tiene suscripción." };
+  if (sub.billing_mode === "stripe" && sub.stripe_subscription_id && sub.status !== "pending_payment")
+    return { ok: false, error: "Paga con tarjeta: cancela antes su suscripción de Stripe." };
+
+  const today = todayInMadrid();
+  const periodStart = sub.current_period_start ?? today;
+  const { error } = await admin
+    .from("subscriptions")
+    .update({
+      billing_mode: "collab",
+      status: "active",
+      amount_cents: 0,
+      discount_breakdown: [
+        { kind: "custom", label: "Colaboración", amount_cents: sub.list_price_cents, percent: 100 },
+      ] as never,
+      current_period_start: periodStart,
+      current_period_end: null,
+      grace_until: null,
+      cancel_at_period_end: false,
+      started_at: sub.started_at ?? new Date().toISOString(),
+    })
+    .eq("id", sub.id);
+  if (error) return { ok: false, error: "No se ha podido guardar." };
+  const { data: client } = await admin.from("clients").select("started_at").eq("id", clientId).single();
+  await admin
+    .from("clients")
+    .update({ billing_mode: "collab", status: "active", started_at: client?.started_at ?? today, cancelled_at: null })
+    .eq("id", clientId);
+  await grantPeriodCredits(clientId, periodStart, today);
+  await admin.from("audit_log").insert({
+    actor_id: viewer.id,
+    action: "collaboration_on",
+    entity: "subscriptions",
+    entity_id: sub.id,
+    client_id: clientId,
+    metadata: { note: note?.slice(0, 300) || null },
+  });
+  if (note?.trim())
+    await admin.from("client_notes").insert({
+      client_id: clientId,
+      author_id: viewer.id,
+      body: `Colaboración: ${note.trim().slice(0, 1000)}`,
+      pinned: true,
+    });
+  revalidatePath(`/panel/clientes/${clientId}`, "layout");
+  revalidatePath("/panel/clientes");
+  revalidatePath("/panel/pendientes");
+  return { ok: true, message: "Marcado como colaboración: no paga y tiene su plan activo." };
+}
+
+/** Deja de ser colaboración: vuelve al cobro manual con su precio, desde hoy. */
+export async function endCollaboration(clientId: string): Promise<StaffResult> {
+  const viewer = await requireScope("billing");
+  if (!z.uuid().safeParse(clientId).success) return { ok: false, error: "Cliente no válido." };
+  const admin = createAdminClient();
+  const { data: sub } = await admin
+    .from("subscriptions")
+    .select("id, list_price_cents")
+    .eq("client_id", clientId)
+    .eq("billing_mode", "collab")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!sub) return { ok: false, error: "No es colaboración." };
+  const today = todayInMadrid();
+  // Vence hoy: le llega el aviso de pago y Jaime registra el cobro como cualquier otro
+  await admin
+    .from("subscriptions")
+    .update({
+      billing_mode: "manual",
+      amount_cents: sub.list_price_cents,
+      discount_breakdown: [] as never,
+      current_period_end: today,
+    })
+    .eq("id", sub.id);
+  await admin.from("clients").update({ billing_mode: "manual" }).eq("id", clientId);
+  await admin.from("audit_log").insert({
+    actor_id: viewer.id,
+    action: "collaboration_off",
+    entity: "subscriptions",
+    entity_id: sub.id,
+    client_id: clientId,
+    metadata: {},
+  });
+  revalidatePath(`/panel/clientes/${clientId}`, "layout");
+  revalidatePath("/panel/clientes");
+  return { ok: true, message: "Ya no es colaboración: vuelve al cobro manual desde hoy." };
 }
 
 /**

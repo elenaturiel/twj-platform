@@ -16,13 +16,11 @@ const nextConfig: NextConfig = {
   // (Supabase SSR), así que el modelo dinámico clásico es más simple y seguro.
   // Ver docs/DECISIONES.md.
   cacheComponents: false,
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
+  experimental: {
+    // Sin caché de disco en `next build`: con el cargador anterior de Tailwind, las
+    // clases nuevas no llegaban al CSS de producción (se quedaba el de la compilación
+    // anterior, y Vercel reutiliza esa caché). Compilar de cero tarda ~15 s más.
+    turbopackFileSystemCacheForBuild: false,
   },
   async headers() {
     return [

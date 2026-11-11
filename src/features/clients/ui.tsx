@@ -14,6 +14,11 @@ export const MODALITY_LABELS: Record<string, string> = {
   running: "Running",
   hyrox: "HYROX",
 };
+export const BILLING_MODE_LABELS: Record<string, string> = {
+  stripe: "Stripe",
+  manual: "Manual",
+  collab: "Colaboración",
+};
 export const METHOD_LABELS: Record<string, string> = {
   stripe: "Tarjeta",
   bizum: "Bizum",
