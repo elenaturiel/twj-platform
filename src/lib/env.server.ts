@@ -9,7 +9,7 @@ const serverSchema = z.object({
   PAYMENTS_MOCK: z.enum(["0", "1"]).default("0"),
   VERCEL_ENV: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
-  EMAIL_FROM: z.string().default("Train with Jaime <hola@mail.trainwithjaime.es>"),
+  EMAIL_FROM: z.string().default("Train with Jaime <avisos@trainwithjaime.es>"),
   CRON_SECRET: z.string().trim().optional(),
   VAPID_PUBLIC_KEY: z.string().optional(),
   VAPID_PRIVATE_KEY: z.string().optional(),

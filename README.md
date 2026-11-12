@@ -118,8 +118,8 @@ tests/e2e/          Playwright
 
 ### 4.3 Resend (emails)
 
-1. Añade y verifica un **subdominio de envío**, p. ej. `mail.trainwithjaime.es`. Resend te da los registros SPF/DKIM (TXT/MX) **solo de ese subdominio**, así no se toca el correo actual del dominio raíz.
-2. Variables: `RESEND_API_KEY` y `EMAIL_FROM="Train with Jaime <hola@mail.trainwithjaime.es>"`.
+1. En Resend añade el dominio `trainwithjaime.es` (región UE). No toca el correo actual: Resend usa su propio selector DKIM (`resend._domainkey`) y el subdominio `send` para el SPF y los rebotes. En Strato: TXT `resend._domainkey` (DKIM) en el dominio; subdominio `send` con su MX (`feedback-smtp.eu-west-1.amazonses.com`, prioridad 10) y su TXT SPF (`v=spf1 include:amazonses.com ~all`).
+2. Variables: `RESEND_API_KEY` y, si quieres otro remitente, `EMAIL_FROM` (por defecto `Train with Jaime <avisos@trainwithjaime.es>`).
 3. Los textos de los emails se editan en la tabla `message_templates` (editor en el panel en la Fase 6).
 
 ### 4.4 Dominio `app.trainwithjaime.es` (sin tocar la web actual)
