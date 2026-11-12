@@ -468,13 +468,13 @@ Propongo **partir la Fase 1** porque es la más grande y la que más decisiones 
 |---|---|---|
 | **1a** | Scaffold, tokens de marca, i18n, PWA base, Supabase local, migración de identidad + RLS + tests RLS, auth (email/magic link/Google), roles, layouts cliente/panel, CI, Vercel preview, seeds base | Login funcionando con owner/admin/cliente y RLS probada |
 | **1b** | Planes, funciones por plan, descuentos (motor + Stripe), `/empezar` + Checkout + webhooks, modo manual + renovaciones + recordatorios, plazas fundador, migrar a Stripe, onboarding + cuestionario de salud + tutor, `profile_changes` + avisos, lista y panel de clientes (pestañas Resumen/Ficha/Pagos/Notas), app del cliente base, email de bienvenida | Alta + pago de punta a punta en preview |
-| 2 | Ejercicios, bloques/semanas/sesiones (4 modalidades), plantillas, importador Excel, registro de entrenos offline, récords | |
-| 3 | Métricas, progreso, fotos privadas, check-ins, gráficas, adherencia | |
-| 4 | Alimentos + OFF, menú semanal, notas, cambios, lista de la compra, HSN | |
-| 5 | Agenda, créditos, Google Calendar/Meet | |
-| 6 | Chat, WhatsApp, push y email completos, resumen diario | |
-| 7 | Retos, rachas, medallas, Squad, lista HYROX | |
-| 8 | Negocio, RGPD completo (export/borrado/retención), pulido de marca, E2E completos, producción | |
+| 2 | Ejercicios, bloques/semanas/sesiones (4 modalidades), plantillas, importador Excel, registro de entrenos offline, récords | ✅ 08-11-2026 |
+| 3 | Métricas, progreso, fotos privadas, check-ins, gráficas, adherencia | ✅ 08-11-2026 |
+| 4 | Alimentos + OFF, menú semanal, notas, cambios, lista de la compra, HSN | ✅ 08-11-2026 |
+| 5 | Agenda, créditos, Google Calendar/Meet | ✅ 08-11-2026 (falta conectar Google) |
+| 6 | Chat, WhatsApp, push y email completos, resumen diario | ✅ 08-11-2026 (faltan claves Resend/VAPID) |
+| 7 | Retos, rachas, medallas, Squad, lista HYROX | ✅ 09-11-2026 |
+| 8 | Negocio, RGPD completo (export/borrado/retención), pulido de marca, E2E completos, producción | ✅ 09-11-2026 (producción: ver checklist del README) |
 | 9 | Capacitor + App Store, Garmin/Strava/Apple Salud, migración masiva a Stripe | |
 
 Cada fase termina con: qué se ha hecho, cómo probarlo (local + preview), qué queda y qué decisiones necesito.

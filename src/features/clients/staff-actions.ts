@@ -1,0 +1,612 @@
+"use server";
+
+import { randomUUID } from "node:crypto";
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { z } from "zod";
+import { requireScope } from "@/lib/auth/dal";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
+import { getStripe } from "@/lib/payments/stripe";
+import { requestOrigin } from "@/lib/request";
+import { sendEmail } from "@/lib/email/send";
+import { todayInMadrid } from "@/lib/dates";
+import { nextManualPeriod } from "@/domain/billing/renewal";
+import type { BillingInterval } from "@/domain/billing/types";
+import { applySubscriptionPayment, grantPeriodCredits } from "@/features/billing/fulfillment";
+import { recomputeClientSubscription } from "@/features/billing/squads.server";
+import { ensureStripeCustomer, ensureStripePrice } from "@/features/billing/stripe-sync";
+import { buildSignupQuote } from "@/features/billing/quote.server";
+import { contactToIntake } from "@/domain/contacts/contacts";
+
+export type StaffResult = { ok: true; message?: string } | { ok: false; error: string };
+
+/**
+ * Enlace de acceso de un solo uso (no depende del email: Jaime lo puede mandar por
+ * WhatsApp). "invite" crea la cuenta; "recovery" sirve para reenviar el acceso o
+ * que alguien ponga contraseña nueva. Si Resend está configurado, también va por email.
+ */
+async function accessLink(
+  kind: "invite" | "recovery",
+  email: string,
+  origin: string,
+  fullName?: string,
+): Promise<{ link: string; userId: string } | { error: string }> {
+  const admin = createAdminClient();
+  const { data, error } = await admin.auth.admin.generateLink(
+    kind === "invite"
+      ? { type: "invite", email, options: { data: { full_name: fullName ?? "" } } }
+      : { type: "recovery", email },
+  );
+  if (error || !data.user || !data.properties?.hashed_token) {
+    return {
+      error: error?.message?.toLowerCase().includes("already")
+        ? "Ya existe una cuenta con ese email."
+        : "No se ha podido generar el acceso.",
+    };
+  }
+  const link = `${origin}/auth/confirm?token_hash=${data.properties.hashed_token}&type=${kind}&next=/auth/nueva-contrasena`;
+  await sendEmail({
+    to: email,
+    subject: kind === "invite" ? "Tu acceso a Train with Jaime" : "Entra en Train with Jaime",
+    preview: "Pon tu contraseña y empieza",
+    paragraphs: [
+      `Hola${fullName ? ` ${fullName.split(" ")[0]}` : ""}:`,
+      "Aquí tienes tu acceso a la app de Train with Jaime. Pulsa el botón, elige tu contraseña y listo.",
+      "El enlace es personal y de un solo uso.",
+    ],
+    cta: { label: "Entrar y poner mi contraseña", href: link },
+  }).catch(() => null);
+  return { link, userId: data.user.id };
+}
+
+/** Nuevo enlace de acceso para un cliente (por si no le llegó o no lo encuentra). */
+export async function getAccessLink(
+  clientId: string,
+): Promise<{ ok: true; link: string; phone: string | null } | { ok: false; error: string }> {
+  await requireScope("clients");
+  const admin = createAdminClient();
+  const { data: c } = await admin
+    .from("clients")
+    .select("profiles(email, full_name, phone)")
+    .eq("id", clientId)
+    .single();
+  const email = c?.profiles?.email;
+  if (!email) return { ok: false, error: "Cliente sin email." };
+  const r = await accessLink("recovery", String(email), await requestOrigin(), c.profiles?.full_name);
+  return "error" in r ? { ok: false, error: r.error } : { ok: true, link: r.link, phone: c.profiles?.phone ?? null };
+}
+
+const newClientSchema = z.object({
+  fullName: z.string().trim().min(2).max(120),
+  email: z.email().trim().toLowerCase(),
+  planKey: z.string(),
+  interval: z.enum(["month", "year"]),
+  billingMode: z.enum(["manual", "stripe"]),
+  // Importe pactado por periodo (obligatorio en Peak, que no tiene precio de lista)
+  customAmountEuros: z.coerce.number().min(0).max(5000).optional(),
+  studentClaim: z.boolean().default(false),
+  modalities: z.array(z.enum(["gym", "functional", "running", "hyrox"])).default([]),
+  phone: z.string().trim().max(30).optional(),
+  leadId: z.uuid().optional(),
+  // Viene de Contactos: se copia a su ficha lo apuntado en la llamada
+  contactId: z.uuid().optional(),
+});
+
+/**
+ * Alta hecha por Jaime/Elena (clientes de hoy, que pagan por Bizum/transferencia).
+ * Crea la cuenta por invitación y deja la suscripción pendiente hasta el primer pago.
+ */
+export async function createClientByStaff(
+  input: z.input<typeof newClientSchema>,
+): Promise<StaffResult & { clientId?: string; accessLink?: string }> {
+  const viewer = await requireScope("clients");
+  const parsed = newClientSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Revisa los datos del cliente." };
+  const d = parsed.data;
+  const admin = createAdminClient();
+  const origin = await requestOrigin();
+
+  const { data: plan } = await admin
+    .from("plans")
+    .select("id, key, name, price_cents, requires_application")
+    .eq("key", d.planKey)
+    .single();
+  if (!plan) return { ok: false, error: "Plan no encontrado." };
+  if (plan.price_cents === null && d.customAmountEuros === undefined)
+    return { ok: false, error: "Indica el importe pactado." };
+
+  const invited = await accessLink("invite", d.email, origin, d.fullName);
+  if ("error" in invited) return { ok: false, error: invited.error };
+  if (d.phone) await admin.from("profiles").update({ phone: d.phone }).eq("id", invited.userId);
+
+  const { data: client, error } = await admin
+    .from("clients")
+    .insert({
+      profile_id: invited.userId,
+      status: "pending_payment",
+      plan_id: plan.id,
+      billing_mode: d.billingMode,
+      billing_interval: d.interval,
+      modalities: d.modalities,
+      referral_code: `TWJ-${randomUUID().slice(0, 6).toUpperCase()}`,
+    })
+    .select("id")
+    .single();
+  if (error || !client) return { ok: false, error: "No se ha podido crear el cliente." };
+  const { data: contact } = d.contactId
+    ? await admin.from("contacts").select("*").eq("id", d.contactId).maybeSingle()
+    : { data: null };
+  await admin.from("client_intake").insert({
+    client_id: client.id,
+    ...(contact ? contactToIntake(contact as Parameters<typeof contactToIntake>[0]) : {}),
+  });
+
+  // Importe: precio de lista con descuentos automáticos (o el pactado)
+  let listCents: number;
+  let amountCents: number;
+  let breakdown: unknown[] = [];
+  if (d.customAmountEuros !== undefined) {
+    amountCents = Math.round(d.customAmountEuros * 100);
+    listCents = plan.price_cents !== null ? plan.price_cents * (d.interval === "year" ? 12 : 1) : amountCents;
+    if (listCents > amountCents)
+      breakdown = [{ kind: "custom", label: "Precio pactado", amount_cents: listCents - amountCents, percent: null }];
+  } else {
+    const q = await buildSignupQuote(
+      { planKey: plan.key, interval: d.interval, studentClaim: d.studentClaim },
+      client.id,
+    );
+    if ("error" in q) return { ok: false, error: q.error };
+    listCents = q.quote.listCents;
+    amountCents = q.quote.totalCents;
+    breakdown = q.quote.lines.map((l) => ({
+      kind: l.kind,
+      label: l.label,
+      amount_cents: l.amountCents,
+      percent: l.percent ?? null,
+    }));
+  }
+
+  await admin.from("subscriptions").insert({
+    client_id: client.id,
+    plan_id: plan.id,
+    billing_mode: d.billingMode,
+    billing_interval: d.interval,
+    status: "pending_payment",
+    list_price_cents: listCents,
+    amount_cents: amountCents,
+    discount_breakdown: breakdown as never,
+  });
+
+  await admin.from("audit_log").insert({
+    actor_id: viewer.id,
+    action: "client_created_by_staff",
+    entity: "clients",
+    entity_id: client.id,
+    client_id: client.id,
+    metadata: { plan: plan.key, billing_mode: d.billingMode },
+  });
+
+  if (d.leadId) await admin.from("leads").update({ status: "won", client_id: client.id }).eq("id", d.leadId);
+  if (contact) {
+    await admin
+      .from("contacts")
+      .update({ status: "client", client_id: client.id, next_followup_on: null })
+      .eq("id", contact.id);
+    if (contact.notes)
+      await admin.from("client_notes").insert({
+        client_id: client.id,
+        author_id: viewer.id,
+        body: `Notas de la llamada:\n${contact.notes}`,
+        pinned: true,
+      });
+    revalidatePath("/panel/contactos");
+    revalidatePath(`/panel/contactos/${contact.id}`);
+  }
+  if (d.billingMode === "stripe") await sendCheckoutLink(client.id);
+  revalidatePath("/panel/clientes");
+  revalidatePath("/panel/pendientes");
+  return {
+    ok: true,
+    clientId: client.id,
+    accessLink: invited.link,
+    message: "Cliente creado. Mándale su enlace de acceso.",
+  };
+}
+
+const paymentSchema = z.object({
+  subscriptionId: z.uuid(),
+  method: z.enum(["bizum", "transfer", "cash", "other"]),
+  amountEuros: z.coerce.number().min(0).max(10000),
+  paidOn: z.iso.date(),
+  periodStart: z.iso.date().optional().or(z.literal("")),
+  periodEnd: z.iso.date().optional().or(z.literal("")),
+  notes: z.string().max(500).optional(),
+});
+
+/** Jaime registra un cobro manual. El primero activa el acceso del cliente. */
+export async function registerManualPayment(input: z.input<typeof paymentSchema>): Promise<StaffResult> {
+  const viewer = await requireScope("billing");
+  const parsed = paymentSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Revisa los datos del pago." };
+  const d = parsed.data;
+  const admin = createAdminClient();
+  const { data: sub } = await admin
+    .from("subscriptions")
+    .select("id, client_id, billing_interval, current_period_end, anchor_day, status")
+    .eq("id", d.subscriptionId)
+    .single();
+  if (!sub) return { ok: false, error: "Suscripción no encontrada." };
+
+  const period =
+    d.periodStart && d.periodEnd
+      ? { start: d.periodStart, end: d.periodEnd }
+      : nextManualPeriod({
+          previousEnd: sub.status === "pending_payment" ? null : sub.current_period_end,
+          paidOn: d.paidOn,
+          interval: sub.billing_interval as BillingInterval,
+          anchorDay: sub.anchor_day ?? undefined,
+        });
+  if (period.end <= period.start) return { ok: false, error: "El periodo no es válido." };
+
+  await applySubscriptionPayment(
+    {
+      subscriptionId: sub.id,
+      method: d.method,
+      amountCents: Math.round(d.amountEuros * 100),
+      paidAt: new Date(`${d.paidOn}T12:00:00Z`).toISOString(),
+      periodStart: period.start,
+      periodEnd: period.end,
+      recordedBy: viewer.id,
+      notes: d.notes || null,
+    },
+    await requestOrigin(),
+  );
+  revalidatePath(`/panel/clientes/${sub.client_id}`, "layout");
+  return { ok: true, message: `Pago registrado. Cubre ${period.start} → ${period.end}.` };
+}
+
+/**
+ * Colaboración: el cliente no paga (acuerdo con Jaime) pero sigue siendo cliente con
+ * su plan, sus créditos del mes y acceso. Sin cuota, sin renovaciones ni avisos de pago.
+ */
+export async function setCollaboration(clientId: string, note?: string): Promise<StaffResult> {
+  const viewer = await requireScope("billing");
+  if (!z.uuid().safeParse(clientId).success) return { ok: false, error: "Cliente no válido." };
+  const admin = createAdminClient();
+  const { data: sub } = await admin
+    .from("subscriptions")
+    .select("id, status, billing_mode, list_price_cents, current_period_start, stripe_subscription_id, started_at")
+    .eq("client_id", clientId)
+    .in("status", ["pending_payment", "active", "past_due", "paused"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!sub) return { ok: false, error: "Este cliente no tiene suscripción." };
+  if (sub.billing_mode === "stripe" && sub.stripe_subscription_id && sub.status !== "pending_payment")
+    return { ok: false, error: "Paga con tarjeta: cancela antes su suscripción de Stripe." };
+
+  const today = todayInMadrid();
+  const periodStart = sub.current_period_start ?? today;
+  const { error } = await admin
+    .from("subscriptions")
+    .update({
+      billing_mode: "collab",
+      status: "active",
+      amount_cents: 0,
+      discount_breakdown: [
+        { kind: "custom", label: "Colaboración", amount_cents: sub.list_price_cents, percent: 100 },
+      ] as never,
+      current_period_start: periodStart,
+      current_period_end: null,
+      grace_until: null,
+      cancel_at_period_end: false,
+      started_at: sub.started_at ?? new Date().toISOString(),
+    })
+    .eq("id", sub.id);
+  if (error) return { ok: false, error: "No se ha podido guardar." };
+  const { data: client } = await admin.from("clients").select("started_at").eq("id", clientId).single();
+  await admin
+    .from("clients")
+    .update({ billing_mode: "collab", status: "active", started_at: client?.started_at ?? today, cancelled_at: null })
+    .eq("id", clientId);
+  await grantPeriodCredits(clientId, periodStart, today);
+  await admin.from("audit_log").insert({
+    actor_id: viewer.id,
+    action: "collaboration_on",
+    entity: "subscriptions",
+    entity_id: sub.id,
+    client_id: clientId,
+    metadata: { note: note?.slice(0, 300) || null },
+  });
+  if (note?.trim())
+    await admin.from("client_notes").insert({
+      client_id: clientId,
+      author_id: viewer.id,
+      body: `Colaboración: ${note.trim().slice(0, 1000)}`,
+      pinned: true,
+    });
+  revalidatePath(`/panel/clientes/${clientId}`, "layout");
+  revalidatePath("/panel/clientes");
+  revalidatePath("/panel/pendientes");
+  return { ok: true, message: "Marcado como colaboración: no paga y tiene su plan activo." };
+}
+
+/** Deja de ser colaboración: vuelve al cobro manual con su precio, desde hoy. */
+export async function endCollaboration(clientId: string): Promise<StaffResult> {
+  const viewer = await requireScope("billing");
+  if (!z.uuid().safeParse(clientId).success) return { ok: false, error: "Cliente no válido." };
+  const admin = createAdminClient();
+  const { data: sub } = await admin
+    .from("subscriptions")
+    .select("id, list_price_cents")
+    .eq("client_id", clientId)
+    .eq("billing_mode", "collab")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (!sub) return { ok: false, error: "No es colaboración." };
+  const today = todayInMadrid();
+  // Vence hoy: le llega el aviso de pago y Jaime registra el cobro como cualquier otro
+  await admin
+    .from("subscriptions")
+    .update({
+      billing_mode: "manual",
+      amount_cents: sub.list_price_cents,
+      discount_breakdown: [] as never,
+      current_period_end: today,
+    })
+    .eq("id", sub.id);
+  await admin.from("clients").update({ billing_mode: "manual" }).eq("id", clientId);
+  await admin.from("audit_log").insert({
+    actor_id: viewer.id,
+    action: "collaboration_off",
+    entity: "subscriptions",
+    entity_id: sub.id,
+    client_id: clientId,
+    metadata: {},
+  });
+  revalidatePath(`/panel/clientes/${clientId}`, "layout");
+  revalidatePath("/panel/clientes");
+  return { ok: true, message: "Ya no es colaboración: vuelve al cobro manual desde hoy." };
+}
+
+/**
+ * Manda al cliente un enlace de Stripe Checkout.
+ * - Alta pendiente: cobra ya.
+ * - Migración de manual a Stripe: la tarjeta se guarda ahora y el primer cobro
+ *   es el día de la próxima renovación (periodo de prueba hasta esa fecha).
+ */
+export async function sendCheckoutLink(clientId: string): Promise<StaffResult> {
+  await requireScope("billing");
+  const stripe = getStripe();
+  if (!stripe) return { ok: false, error: "Stripe no está configurado todavía (faltan claves)." };
+  const admin = createAdminClient();
+  const origin = await requestOrigin();
+
+  const { data: client } = await admin
+    .from("clients")
+    .select("id, stripe_customer_id, profiles(email, full_name)")
+    .eq("id", clientId)
+    .single();
+  const { data: sub } = await admin
+    .from("subscriptions")
+    .select(
+      "id, status, billing_mode, billing_interval, list_price_cents, amount_cents, current_period_end, plans(id, key, name, stripe_product_id)",
+    )
+    .eq("client_id", clientId)
+    .in("status", ["pending_payment", "active", "past_due"])
+    .single();
+  if (!client?.profiles || !sub?.plans) return { ok: false, error: "No hay suscripción que cobrar." };
+
+  const migration = sub.status !== "pending_payment";
+  const customerId = await ensureStripeCustomer(stripe, admin, client, client.profiles);
+  const priceId = await ensureStripePrice(
+    stripe,
+    admin,
+    sub.plans,
+    sub.billing_interval as BillingInterval,
+    sub.list_price_cents,
+  );
+  const discount = sub.list_price_cents - sub.amount_cents;
+  const coupon =
+    !migration && discount > 0
+      ? (
+          await stripe.coupons.create({
+            amount_off: discount,
+            currency: "eur",
+            duration: "once",
+            name: "Descuento TWJ",
+          })
+        ).id
+      : null;
+  const trialEnd =
+    migration && sub.current_period_end && sub.current_period_end > todayInMadrid()
+      ? Math.floor(new Date(`${sub.current_period_end}T08:00:00Z`).getTime() / 1000)
+      : undefined;
+
+  const session = await stripe.checkout.sessions.create({
+    mode: "subscription",
+    customer: customerId,
+    line_items: [{ price: priceId, quantity: 1 }],
+    ...(coupon ? { discounts: [{ coupon }] } : {}),
+    locale: "es",
+    metadata: { subscription_id: sub.id, client_id: clientId, migration: migration ? "1" : "0" },
+    subscription_data: {
+      metadata: { subscription_id: sub.id, client_id: clientId, migration: migration ? "1" : "0" },
+      ...(trialEnd ? { trial_end: trialEnd } : {}),
+    },
+    success_url: `${origin}/perfil/plan?stripe=ok`,
+    cancel_url: `${origin}/perfil/plan`,
+  });
+  await admin.from("subscriptions").update({ checkout_session_id: session.id }).eq("id", sub.id);
+
+  await sendEmail({
+    to: client.profiles.email,
+    subject: migration ? "Activa el pago automático de tu plan" : "Completa el pago de tu plan TWJ",
+    preview: "Enlace de pago seguro",
+    paragraphs: [
+      `Hola ${client.profiles.full_name.split(" ")[0] ?? ""}:`,
+      migration
+        ? `Te pasamos al pago automático con tarjeta. No se cobra nada hoy: el primer cargo será el día de tu renovación (${sub.current_period_end}).`
+        : "Aquí tienes el enlace para pagar tu plan y activar tu acceso.",
+    ],
+    cta: { label: migration ? "Guardar mi tarjeta" : "Pagar ahora", href: session.url! },
+  });
+  return { ok: true, message: "Enlace de pago enviado por email." };
+}
+
+/** Jaime revisa el carné universitario. Si lo rechaza, se quita el −10 % en la próxima cuota. */
+export async function reviewStudentCard(input: {
+  verificationId: string;
+  approve: boolean;
+  reason?: string;
+}): Promise<StaffResult> {
+  const viewer = await requireScope("billing");
+  const admin = createAdminClient();
+  const { data: v } = await admin
+    .from("student_verifications")
+    .select("id, client_id")
+    .eq("id", input.verificationId)
+    .single();
+  if (!v) return { ok: false, error: "No encontrado." };
+
+  // Validez: hasta el final del curso (31 de agosto)
+  const today = todayInMadrid();
+  const year = Number(today.slice(0, 4)) + (Number(today.slice(5, 7)) >= 9 ? 1 : 0);
+  await admin
+    .from("student_verifications")
+    .update({
+      status: input.approve ? "approved" : "rejected",
+      reviewed_by: viewer.id,
+      reviewed_at: new Date().toISOString(),
+      rejection_reason: input.approve ? null : (input.reason ?? null),
+      valid_until: input.approve ? `${year}-08-31` : null,
+    })
+    .eq("id", v.id);
+
+  const { data: redemption } = await admin
+    .from("discount_redemptions")
+    .select("id, snapshot, discounts!inner(kind)")
+    .eq("client_id", v.client_id)
+    .eq("discounts.kind", "student")
+    .in("status", ["applied", "reserved"])
+    .maybeSingle();
+  if (redemption) {
+    if (input.approve) {
+      await admin
+        .from("discount_redemptions")
+        .update({ snapshot: { ...(redemption.snapshot as object), pending_verification: false } })
+        .eq("id", redemption.id);
+    } else {
+      await admin
+        .from("discount_redemptions")
+        .update({ status: "revoked", revoked_at: new Date().toISOString() })
+        .eq("id", redemption.id);
+      await recomputeClientSubscription(v.client_id);
+    }
+  }
+  revalidatePath("/panel/pendientes");
+  return { ok: true };
+}
+
+/** Enlace firmado (2 min) para ver un archivo privado. Queda registrado en la auditoría. */
+export async function signedFileUrl(bucket: "student-cards" | "documents", path: string, clientId: string) {
+  await requireScope(bucket === "student-cards" ? "billing" : "clients");
+  const supabase = await createClient();
+  await supabase.rpc("log_access", { p_entity: bucket, p_entity_id: path, p_client_id: clientId });
+  const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 120);
+  if (!data?.signedUrl) return null;
+  return data.signedUrl;
+}
+
+export async function saveClientNote(clientId: string, body: string): Promise<StaffResult> {
+  const viewer = await requireScope("clients");
+  if (!body.trim()) return { ok: false, error: "La nota está vacía." };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("client_notes")
+    .insert({ client_id: clientId, author_id: viewer.id, body: body.trim() });
+  if (error) return { ok: false, error: "No se ha podido guardar." };
+  revalidatePath(`/panel/clientes/${clientId}/notas`);
+  return { ok: true };
+}
+
+export async function deleteClientNote(noteId: string, clientId: string): Promise<StaffResult> {
+  await requireScope("clients");
+  const supabase = await createClient();
+  await supabase.from("client_notes").delete().eq("id", noteId);
+  revalidatePath(`/panel/clientes/${clientId}/notas`);
+  return { ok: true };
+}
+
+const callSchema = z.object({
+  clientId: z.uuid(),
+  heldAt: z.string().optional(),
+  notes: z.string().max(5000).default(""),
+  agreedGoals: z.string().max(2000).default(""),
+  metricsToTrack: z.string().max(2000).default(""),
+  initialBlocks: z.string().max(2000).default(""),
+  observations: z.string().max(5000).default(""),
+});
+
+/** Ficha de la llamada de onboarding (solo staff). */
+export async function saveOnboardingCall(input: z.input<typeof callSchema>): Promise<StaffResult> {
+  const viewer = await requireScope("clients");
+  const parsed = callSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Datos no válidos." };
+  const d = parsed.data;
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("onboarding_calls")
+    .select("id")
+    .eq("client_id", d.clientId)
+    .maybeSingle();
+  const row = {
+    client_id: d.clientId,
+    held_at: d.heldAt ? new Date(d.heldAt).toISOString() : null,
+    notes: d.notes,
+    agreed_goals: d.agreedGoals,
+    metrics_to_track: d.metricsToTrack,
+    initial_blocks: d.initialBlocks,
+    observations: d.observations,
+  };
+  const { error } = existing
+    ? await supabase.from("onboarding_calls").update(row).eq("id", existing.id)
+    : await supabase.from("onboarding_calls").insert({ ...row, created_by: viewer.id });
+  if (error) return { ok: false, error: "No se ha podido guardar." };
+  revalidatePath(`/panel/clientes/${d.clientId}/ficha`);
+  return { ok: true };
+}
+
+export async function updateClientAdmin(input: {
+  clientId: string;
+  modalities: string[];
+  tags: string[];
+}): Promise<StaffResult> {
+  await requireScope("clients");
+  const supabase = await createClient();
+  const modalities = input.modalities.filter((m) => ["gym", "functional", "running", "hyrox"].includes(m));
+  const tags = input.tags
+    .map((t) => t.trim().toLowerCase())
+    .filter(Boolean)
+    .slice(0, 20);
+  const { error } = await supabase.from("clients").update({ modalities, tags }).eq("id", input.clientId);
+  if (error) return { ok: false, error: "No se ha podido guardar." };
+  revalidatePath(`/panel/clientes/${input.clientId}`, "layout");
+  return { ok: true };
+}
+
+export async function goToNewClient(clientId: string) {
+  redirect(`/panel/clientes/${clientId}`);
+}
+
+/** Rechazar (o archivar) una solicitud de plaza. */
+export async function dismissAccessRequest(leadId: string): Promise<StaffResult> {
+  await requireScope("clients");
+  const supabase = await createClient();
+  const { error } = await supabase.from("leads").update({ status: "lost" }).eq("id", leadId);
+  if (error) return { ok: false, error: "No se ha podido guardar." };
+  revalidatePath("/panel/pendientes");
+  return { ok: true };
+}
