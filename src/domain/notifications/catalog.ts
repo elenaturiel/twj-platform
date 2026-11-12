@@ -28,6 +28,13 @@ export const NOTIFICATION_TYPES: NotificationTypeInfo[] = [
   { type: "renewal_upcoming", label: "Próxima renovación", group: "Pagos", audience: "client", critical: true },
   { type: "payment_failed", label: "Pago fallido", group: "Pagos", audience: "client", critical: true },
   { type: "extra_session_paid", label: "Sesión extra pagada", group: "Pagos", audience: "client" },
+  {
+    type: "guardian_reviewed",
+    label: "Autorización del tutor revisada",
+    group: "Cuenta",
+    audience: "client",
+    critical: true,
+  },
   // Equipo
   { type: "chat_message", label: "Mensajes de clientes", group: "Chat", audience: "staff" },
   { type: "new_signup", label: "Altas nuevas", group: "Clientes", audience: "staff" },
@@ -35,6 +42,12 @@ export const NOTIFICATION_TYPES: NotificationTypeInfo[] = [
   { type: "client_profile_changed", label: "Cambios en la ficha de un cliente", group: "Clientes", audience: "staff" },
   { type: "client_cancelled", label: "Bajas", group: "Clientes", audience: "staff" },
   { type: "guardian_confirmed", label: "Tutor legal confirmado", group: "Clientes", audience: "staff" },
+  {
+    type: "guardian_document_uploaded",
+    label: "Autorizaciones de menores por revisar",
+    group: "Clientes",
+    audience: "staff",
+  },
   { type: "peak_application", label: "Solicitudes de Peak", group: "Clientes", audience: "staff" },
   { type: "student_card_uploaded", label: "Carnés de estudiante", group: "Clientes", audience: "staff" },
   { type: "workout_completed", label: "Entrenos registrados y récords", group: "Entreno", audience: "staff" },

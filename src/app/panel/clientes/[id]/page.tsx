@@ -8,7 +8,15 @@ import { formatDate } from "@/features/clients/ui";
 export default async function ClientSummary({ params }: PageProps<"/panel/clientes/[id]">) {
   const { id } = await params;
   const supabase = await createClient();
-  const [{ data: c }, { data: sub }, { data: lastChange }, { data: health }, { data: credits }] = await Promise.all([
+  const [
+    { data: c },
+    { data: sub },
+    { data: lastChange },
+    { data: health },
+    { data: credits },
+    { data: streak },
+    { data: lastCheckin },
+  ] = await Promise.all([
     supabase
       .from("clients")
       .select(
@@ -37,6 +45,19 @@ export default async function ClientSummary({ params }: PageProps<"/panel/client
       .limit(1)
       .maybeSingle(),
     supabase.from("session_credits").select("credit_type, delta").eq("client_id", id),
+    supabase
+      .from("client_streaks")
+      .select("training_weeks, checkin_streak, week_done, week_planned")
+      .eq("client_id", id)
+      .maybeSingle(),
+    supabase
+      .from("checkins")
+      .select("submitted_at")
+      .eq("client_id", id)
+      .not("submitted_at", "is", null)
+      .order("submitted_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
   if (!c) return null;
 
@@ -61,7 +82,12 @@ export default async function ClientSummary({ params }: PageProps<"/panel/client
     ["Último cambio de ficha", formatDate(lastChange?.created_at, true)],
     ["Créditos entreno en directo", String(balance("live_training"))],
     ["Créditos videollamada mensual", String(balance("monthly_call"))],
-    ["Racha / adherencia / último check-in", "Llega con las Fases 2–3"],
+    [
+      "Racha de entreno",
+      streak ? `${streak.training_weeks} ${streak.training_weeks === 1 ? "semana" : "semanas"}` : "—",
+    ],
+    ["Esta semana", streak?.week_planned ? `${streak.week_done} de ${streak.week_planned} sesiones` : "—"],
+    ["Último check-in", formatDate(lastCheckin?.submitted_at)],
   ];
 
   return (

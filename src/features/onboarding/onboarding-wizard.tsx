@@ -138,8 +138,9 @@ export function OnboardingWizard({
       {step === 2 && minor ? (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            Como eres menor de edad, necesitamos que tu madre, padre o tutor/a legal lo autorice. Le mandamos un email
-            y, en cuanto acepte, tienes acceso.
+            Como eres menor de edad, tu madre, padre o tutor/a legal tiene que autorizarlo. Al terminar te damos un PDF
+            con tus datos para que lo firme; lo subes a la app (o se lo mandas a Jaime) y, en cuanto Jaime lo revise,
+            empiezas.
           </p>
           <div className="space-y-2">
             <Label htmlFor="guardianName">Nombre del tutor/a</Label>

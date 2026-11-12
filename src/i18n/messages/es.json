@@ -101,7 +101,7 @@
     "cancelledTitle": "Tu plan está cancelado",
     "cancelledBody": "Tu historial sigue aquí. Cuando quieras volver, te esperamos.",
     "guardianPendingTitle": "Falta la autorización de tu tutor/a",
-    "guardianPendingBody": "Le hemos mandado un email a {email}. En cuanto lo autorice, entras.",
+    "guardianPendingBody": "Como eres menor de edad, tu padre, madre o tutor/a tiene que firmar una autorización antes de que empieces a entrenar.",
     "lockedFeature": "Esto va en el plan {plan}.",
     "lockedFeatureCta": "Ver plan {plan}"
   },

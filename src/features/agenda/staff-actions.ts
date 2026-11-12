@@ -35,6 +35,9 @@ export async function staffBook(input: z.infer<typeof staffBookSchema>): Promise
   const p = staffBookSchema.safeParse(input);
   if (!p.success) return fail("Revisa los datos de la cita.");
   const supabase = await createClient();
+  const { data: who } = await supabase.from("clients").select("guardian_status").eq("id", p.data.clientId).single();
+  if (who?.guardian_status === "pending")
+    return fail("Es menor y falta la autorización firmada de su tutor/a: apruébala antes de entrenar con él/ella.");
   const { data: id, error } = await supabase.rpc("book_appointment", {
     p_type: p.data.typeKey,
     p_starts_at: p.data.startsAt,

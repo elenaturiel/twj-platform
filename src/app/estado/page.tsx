@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 import { signOut } from "@/features/auth/actions";
 import { AuthShell } from "@/features/auth/auth-shell";
 import { Button } from "@/components/ui/button";
+import { GuardianConsentPanel } from "@/features/minors/guardian-consent-panel";
+import { guardianConsentState } from "@/domain/minors/consent";
 
 export const metadata: Metadata = { title: "Estado de tu cuenta" };
 
@@ -49,19 +51,24 @@ export default async function StatusPage() {
       );
     case "guardian_pending": {
       const supabase = await createClient();
-      const { data } = await supabase
-        .from("guardian_authorizations")
-        .select("guardian_email")
-        .eq("client_id", ctx.client.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const [{ count }, { data: wa }] = await Promise.all([
+        supabase
+          .from("documents")
+          .select("id", { count: "exact", head: true })
+          .eq("client_id", ctx.client.id)
+          .eq("kind", "guardian"),
+        supabase.from("settings").select("value").eq("key", "contact.whatsapp_number").maybeSingle(),
+      ]);
       return (
-        <AuthShell
-          title={t("guardianPendingTitle")}
-          subtitle={t("guardianPendingBody", { email: data?.guardian_email ?? "tu tutor/a" })}
-        >
-          <SignOutButton />
+        <AuthShell title={t("guardianPendingTitle")} subtitle={t("guardianPendingBody")}>
+          <div className="space-y-4">
+            <GuardianConsentPanel
+              clientId={ctx.client.id}
+              state={guardianConsentState("pending", Boolean(count))}
+              whatsapp={typeof wa?.value === "string" && wa.value ? wa.value : null}
+            />
+            <SignOutButton />
+          </div>
         </AuthShell>
       );
     }
