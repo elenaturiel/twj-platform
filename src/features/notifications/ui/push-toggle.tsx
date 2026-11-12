@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { BellOff, BellRing, Loader2 } from "lucide-react";
-import { subscribePush, unsubscribePush } from "../actions";
+import { sendTestNotification, subscribePush, unsubscribePush } from "../actions";
 import { Button } from "@/components/ui/button";
 
 type State = "loading" | "unsupported" | "ios-install" | "denied" | "off" | "on";
@@ -22,7 +22,15 @@ async function registration() {
 }
 
 /** Activa o desactiva los avisos push en ESTE dispositivo. */
-export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }) {
+export function PushToggle({
+  vapidPublicKey,
+  onActivated,
+  showTest = true,
+}: {
+  vapidPublicKey: string | null;
+  onActivated?: () => void;
+  showTest?: boolean;
+}) {
   const [state, setState] = useState<State>("loading");
   const [pending, start] = useTransition();
 
@@ -61,24 +69,27 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
     );
 
   return state === "on" ? (
-    <Button
-      variant="outline"
-      disabled={pending}
-      onClick={() =>
-        start(async () => {
-          const reg = await navigator.serviceWorker.getRegistration("/");
-          const sub = await reg?.pushManager.getSubscription();
-          if (sub) {
-            await unsubscribePush(sub.endpoint);
-            await sub.unsubscribe();
-          }
-          setState("off");
-          toast.success("Avisos push desactivados en este dispositivo");
-        })
-      }
-    >
-      <BellOff className="size-4" /> Desactivar en este dispositivo
-    </Button>
+    <div className="flex flex-wrap gap-2">
+      {showTest ? <TestNotificationButton /> : null}
+      <Button
+        variant="outline"
+        disabled={pending}
+        onClick={() =>
+          start(async () => {
+            const reg = await navigator.serviceWorker.getRegistration("/");
+            const sub = await reg?.pushManager.getSubscription();
+            if (sub) {
+              await unsubscribePush(sub.endpoint);
+              await sub.unsubscribe();
+            }
+            setState("off");
+            toast.success("Avisos push desactivados en este dispositivo");
+          })
+        }
+      >
+        <BellOff className="size-4" /> Desactivar en este dispositivo
+      </Button>
+    </div>
   ) : (
     <Button
       disabled={pending}
@@ -97,6 +108,7 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
             if (!r.ok) return void toast.error(r.error);
             setState("on");
             toast.success("¡Listo! Te avisaremos en este dispositivo");
+            onActivated?.();
           } catch {
             toast.error("No se han podido activar los avisos.");
           }
@@ -105,6 +117,42 @@ export function PushToggle({ vapidPublicKey }: { vapidPublicKey: string | null }
     >
       {pending ? <Loader2 className="size-4 animate-spin" /> : <BellRing className="size-4" />} Activar avisos en este
       dispositivo
+    </Button>
+  );
+}
+
+/** Se manda una notificación a sí mismo y dice por dónde ha salido. */
+export function TestNotificationButton() {
+  const [pending, start] = useTransition();
+  return (
+    <Button
+      variant="secondary"
+      disabled={pending}
+      onClick={() =>
+        start(async () => {
+          const r = await sendTestNotification();
+          if (!r.ok) return void toast.error(r.error);
+          const push =
+            r.push === "sent"
+              ? `Push enviado a ${r.devices} ${r.devices === 1 ? "dispositivo" : "dispositivos"}`
+              : r.push === "failed"
+                ? "El push no ha llegado: desactívalo y vuelve a activarlo"
+                : "Push: activa los avisos en este dispositivo";
+          const email =
+            r.email === "sent"
+              ? "email enviado"
+              : r.email === "skipped"
+                ? "el email aún no está configurado"
+                : r.email === "failed"
+                  ? "el email ha fallado"
+                  : "email desactivado en tus preferencias";
+          if (r.push === "sent") toast.success(`${push} · ${email}`);
+          else toast.warning(`${push} · ${email}`);
+        })
+      }
+    >
+      {pending ? <Loader2 className="size-4 animate-spin" /> : <BellRing className="size-4" />} Mandarme una
+      notificación de prueba
     </Button>
   );
 }

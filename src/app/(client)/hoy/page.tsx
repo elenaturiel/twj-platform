@@ -18,6 +18,8 @@ import { EmptyState } from "@/components/twj/empty-state";
 import { WhatsAppButton } from "@/components/twj/whatsapp-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PushPrompt } from "@/features/notifications/ui/push-prompt";
+import { serverEnv } from "@/lib/env.server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata: Metadata = { title: "Hoy" };
@@ -56,6 +58,7 @@ export default async function TodayPage() {
   return (
     <div className="space-y-5">
       {newBadges.length ? <BadgeCelebration badges={newBadges} /> : null}
+      <PushPrompt vapidPublicKey={serverEnv().VAPID_PUBLIC_KEY ?? null} audience="client" />
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">{ctx.client.planName ? `Plan ${ctx.client.planName}` : null}</p>

@@ -48,6 +48,7 @@ export const webPushChannel: NotificationChannel = {
     if (!subs?.length) return { status: "skipped" };
 
     let sent = 0;
+    const errors: string[] = [];
     for (const s of subs) {
       try {
         await webpush.sendNotification(
@@ -57,12 +58,18 @@ export const webPushChannel: NotificationChannel = {
         sent++;
         await admin.from("push_subscriptions").update({ last_used_at: new Date().toISOString() }).eq("id", s.id);
       } catch (e) {
-        const code = (e as { statusCode?: number }).statusCode;
+        const err = e as { statusCode?: number; body?: string; message?: string };
         // 404/410: la suscripción ya no existe en el navegador
-        if (code === 404 || code === 410) await admin.from("push_subscriptions").delete().eq("id", s.id);
+        if (err.statusCode === 404 || err.statusCode === 410)
+          await admin.from("push_subscriptions").delete().eq("id", s.id);
+        errors.push(
+          err.statusCode ? `${err.statusCode} ${String(err.body ?? "").slice(0, 120)}` : String(err.message ?? e),
+        );
       }
     }
-    return sent > 0 ? { status: "sent" } : { status: "failed", error: "Ningún dispositivo aceptó el push" };
+    return sent > 0
+      ? { status: "sent" }
+      : { status: "failed", error: `Ningún dispositivo aceptó el push: ${errors.join(" | ").slice(0, 400)}` };
   },
 };
 

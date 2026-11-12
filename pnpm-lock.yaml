@@ -132,6 +132,9 @@ importers:
       eslint-config-next:
         specifier: 16.4.3
         version: 16.4.3(@typescript-eslint/parser@8.72.0(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3))(eslint@9.39.5(jiti@2.7.0))(typescript@5.9.3)
+      http_ece:
+        specifier: 1.2.0
+        version: 1.2.0
       prettier:
         specifier: ^3.9.10
         version: 3.9.10

@@ -8,6 +8,8 @@ import { formatEuros } from "@/lib/money";
 import { addDays } from "@/domain/billing/renewal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/twj/empty-state";
+import { PushPrompt } from "@/features/notifications/ui/push-prompt";
+import { serverEnv } from "@/lib/env.server";
 import { FIELD_LABELS } from "@/features/onboarding/labels";
 
 export const metadata: Metadata = { title: "Panel" };
@@ -67,6 +69,7 @@ export default async function PanelHome() {
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <h1 className="text-3xl font-extrabold">{t("title", { name: viewer.fullName.split(" ")[0] || "" })}</h1>
+      <PushPrompt vapidPublicKey={serverEnv().VAPID_PUBLIC_KEY ?? null} audience="staff" />
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         {kpis.map((k) => (
           <Card key={k.label} className="gap-1 py-4">
