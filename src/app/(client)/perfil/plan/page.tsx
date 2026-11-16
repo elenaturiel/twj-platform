@@ -31,6 +31,7 @@ export default async function MyPlanPage({ searchParams }: PageProps<"/perfil/pl
     { data: student },
     { data: squadSize },
     { data: squad },
+    { data: overrides },
   ] = await Promise.all([
     supabase
       .from("subscriptions")
@@ -60,6 +61,7 @@ export default async function MyPlanPage({ searchParams }: PageProps<"/perfil/pl
       .maybeSingle(),
     supabase.rpc("my_squad_size"),
     supabase.from("squads").select("code").maybeSingle(),
+    supabase.from("client_feature_overrides").select("feature_key, enabled").eq("client_id", ctx.client.id),
   ]);
 
   const { data: verification } = student
@@ -160,17 +162,23 @@ export default async function MyPlanPage({ searchParams }: PageProps<"/perfil/pl
       <section className="space-y-2">
         <h2 className="text-xl font-bold">Qué incluye</h2>
         <ul className="divide-y rounded-xl border text-sm">
-          {(features ?? []).map((f) => (
-            <li key={f.feature_key} className="flex items-center gap-3 px-4 py-2.5">
-              {f.enabled ? (
-                <Check className="size-4 text-success" aria-hidden />
-              ) : (
-                <Lock className="size-4 text-muted-foreground" aria-hidden />
-              )}
-              <span className={f.enabled ? "" : "text-muted-foreground"}>{f.feature_name}</span>
-              {f.label ? <span className="ml-auto text-xs text-muted-foreground">{f.label}</span> : null}
-            </li>
-          ))}
+          {(features ?? [])
+            .map((f) => {
+              // Lo ajustado para este cliente (planes a medida) manda sobre lo del plan
+              const o = overrides?.find((x) => x.feature_key === f.feature_key);
+              return o ? { ...f, enabled: o.enabled, label: o.enabled === f.enabled ? f.label : null } : f;
+            })
+            .map((f) => (
+              <li key={f.feature_key} className="flex items-center gap-3 px-4 py-2.5">
+                {f.enabled ? (
+                  <Check className="size-4 text-success" aria-hidden />
+                ) : (
+                  <Lock className="size-4 text-muted-foreground" aria-hidden />
+                )}
+                <span className={f.enabled ? "" : "text-muted-foreground"}>{f.feature_name}</span>
+                {f.label ? <span className="ml-auto text-xs text-muted-foreground">{f.label}</span> : null}
+              </li>
+            ))}
         </ul>
       </section>
 

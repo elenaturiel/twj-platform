@@ -36,8 +36,8 @@ export default async function PendingPage() {
       .order("created_at"),
     supabase
       .from("leads")
-      .select("id, name, email, phone, pack_weeks, event_name, event_date, message, created_at")
-      .eq("kind", "peak_application")
+      .select("id, kind, name, email, phone, pack_weeks, event_name, event_date, message, answers, created_at")
+      .in("kind", ["peak_application", "plan_application"])
       .in("status", ["new", "contacted"])
       .order("created_at", { ascending: false }),
     supabase
@@ -232,30 +232,40 @@ export default async function PendingPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Solicitudes Peak ({leads?.length ?? 0})</CardTitle>
+          <CardTitle className="text-base">
+            Solicitudes de planes a medida: Peak, HYROX… ({leads?.length ?? 0})
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {leads?.length ? (
             <ul className="divide-y text-sm">
-              {leads.map((l) => (
-                <li key={l.id} className="space-y-1 py-3">
-                  <p className="font-medium">
-                    {l.name} ·{" "}
-                    <a className="underline" href={`mailto:${l.email}`}>
-                      {l.email}
-                    </a>{" "}
-                    {l.phone ? `· ${l.phone}` : ""}
-                  </p>
-                  <p>
-                    {l.event_name} {l.event_date ? `(${formatDate(l.event_date)})` : ""} · {l.pack_weeks} semanas
-                  </p>
-                  {l.message ? <p className="whitespace-pre-line text-muted-foreground">{l.message}</p> : null}
-                  <p className="text-xs text-muted-foreground">
-                    {formatDate(l.created_at, true)} · Para darle de alta: Clientes → Nuevo cliente (plan Peak, importe
-                    pactado).
-                  </p>
-                </li>
-              ))}
+              {leads.map((l) => {
+                const answers = (l.answers ?? {}) as { plan?: string; division?: string };
+                const planKey = l.kind === "peak_application" ? "peak" : (answers.plan ?? null);
+                const details = [
+                  l.event_name,
+                  l.event_date ? formatDate(l.event_date) : null,
+                  answers.division,
+                  l.pack_weeks ? `${l.pack_weeks} semanas` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ");
+                return (
+                  <AccessRequestRow
+                    key={l.id}
+                    r={{
+                      id: l.id,
+                      name: l.name,
+                      email: l.email,
+                      phone: l.phone,
+                      message: [details, l.message].filter(Boolean).join("\n") || null,
+                      plan: planKey,
+                      created: formatDate(l.created_at, true),
+                    }}
+                    planName={plans?.find((p) => p.key === planKey)?.name ?? null}
+                  />
+                );
+              })}
             </ul>
           ) : (
             <EmptyState title="Sin solicitudes nuevas." />

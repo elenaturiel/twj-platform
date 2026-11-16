@@ -49,6 +49,7 @@ export const NOTIFICATION_TYPES: NotificationTypeInfo[] = [
     audience: "staff",
   },
   { type: "peak_application", label: "Solicitudes de Peak", group: "Clientes", audience: "staff" },
+  { type: "plan_application", label: "Solicitudes de planes a medida (HYROX…)", group: "Clientes", audience: "staff" },
   { type: "student_card_uploaded", label: "Carnés de estudiante", group: "Clientes", audience: "staff" },
   { type: "workout_completed", label: "Entrenos registrados y récords", group: "Entreno", audience: "staff" },
   { type: "checkin_submitted", label: "Check-ins recibidos", group: "Seguimiento", audience: "staff" },

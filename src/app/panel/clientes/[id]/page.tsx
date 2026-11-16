@@ -4,6 +4,7 @@ import { formatEuros } from "@/lib/money";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ClientAdminForm } from "@/features/clients/staff-forms";
 import { formatDate } from "@/features/clients/ui";
+import { ClientFeatures, type ClientFeatureRow } from "@/features/plans/client-features";
 
 export default async function ClientSummary({ params }: PageProps<"/panel/clientes/[id]">) {
   const { id } = await params;
@@ -20,7 +21,7 @@ export default async function ClientSummary({ params }: PageProps<"/panel/client
     supabase
       .from("clients")
       .select(
-        "id, status, modalities, tags, started_at, last_activity_at, onboarding_completed_at, guardian_status, is_minor, profiles(email, phone), client_intake(goal)",
+        "id, status, plan_id, modalities, tags, started_at, last_activity_at, onboarding_completed_at, guardian_status, is_minor, profiles(email, phone), client_intake(goal)",
       )
       .eq("id", id)
       .single(),
@@ -60,6 +61,29 @@ export default async function ClientSummary({ params }: PageProps<"/panel/client
       .maybeSingle(),
   ]);
   if (!c) return null;
+
+  const [{ data: features }, { data: planFeatures }, { data: overrides }, { data: canBilling }] = await Promise.all([
+    supabase.from("features").select("key, name, kind, unit").order("sort_order"),
+    supabase
+      .from("plan_features")
+      .select("feature_key, enabled, limit_value")
+      .eq("plan_id", c.plan_id ?? ""),
+    supabase.from("client_feature_overrides").select("feature_key, enabled, limit_value").eq("client_id", id),
+    supabase.rpc("has_scope", { p_scope: "billing" }),
+  ]);
+  const featureRows: ClientFeatureRow[] = (features ?? []).map((f) => {
+    const pf = planFeatures?.find((x) => x.feature_key === f.key);
+    const o = overrides?.find((x) => x.feature_key === f.key);
+    return {
+      key: f.key,
+      name: f.name,
+      kind: f.kind as "bool" | "limit",
+      unit: f.unit,
+      planEnabled: pf?.enabled ?? false,
+      planLimit: pf?.limit_value ?? null,
+      override: o ? { enabled: o.enabled, limit: o.limit_value } : null,
+    };
+  });
 
   const alerts = [
     c.status === "past_due" && `Pago vencido · acceso hasta el ${formatDate(sub?.grace_until)}`,
@@ -111,14 +135,27 @@ export default async function ClientSummary({ params }: PageProps<"/panel/client
           ))}
         </dl>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Modalidades y etiquetas</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ClientAdminForm clientId={c.id} modalities={c.modalities} tags={c.tags} />
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Modalidades y etiquetas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ClientAdminForm clientId={c.id} modalities={c.modalities} tags={c.tags} />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Qué incluye su plan</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Sale de su plan. En planes a medida (HYROX, Peak) ajústalo aquí solo para este cliente.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <ClientFeatures clientId={c.id} rows={featureRows} canEdit={Boolean(canBilling)} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

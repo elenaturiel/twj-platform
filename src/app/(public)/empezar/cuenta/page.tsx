@@ -16,7 +16,7 @@ export default async function SignupPage({ searchParams }: PageProps<"/empezar/c
   const [plans, squadPlanKeys] = await Promise.all([getPublicPlans(), getSquadPlanKeys()]);
   const plan = plans.find((p) => p.key === planKey);
   if (!plan) notFound();
-  if (plan.requiresApplication) redirect("/empezar/peak");
+  if (plan.requiresApplication) redirect(plan.key === "peak" ? "/empezar/peak" : `/empezar/solicitud?plan=${plan.key}`);
 
   const { publicSignup } = await getPublicSettings();
   if (!publicSignup) {

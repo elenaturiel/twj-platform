@@ -43,7 +43,7 @@ export function PlanPicker({
         ))}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {plans.map((plan) => {
           const isFounder = plan.key === "mvp" && founderSlotsLeft > 0;
           const monthly =
@@ -52,7 +52,9 @@ export function PlanPicker({
           const shown =
             monthly === null ? null : showAnnual ? Math.round(monthly * (1 - annualPercent / 100)) : monthly;
           const href = plan.requiresApplication
-            ? "/empezar/peak"
+            ? plan.key === "peak"
+              ? "/empezar/peak"
+              : `/empezar/solicitud?plan=${plan.key}`
             : `/empezar/cuenta?plan=${plan.key}&intervalo=${showAnnual ? "year" : "month"}`;
 
           return (
@@ -94,7 +96,11 @@ export function PlanPicker({
                     </p>
                   ) : null}
                   {plan.requiresApplication ? (
-                    <p className="mt-1 text-xs text-muted-foreground">Pack de 8, 10 o 12 semanas para tu evento</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {plan.key === "peak"
+                        ? "Pack de 8, 10 o 12 semanas para tu evento"
+                        : "Duración y precio según tu caso"}
+                    </p>
                   ) : null}
                 </div>
                 <ul className="space-y-2 text-sm">
@@ -108,7 +114,7 @@ export function PlanPicker({
               </CardContent>
               <CardFooter>
                 <Button asChild className="w-full" variant={plan.key === "mvp" ? "default" : "outline"}>
-                  <Link href={href}>{plan.requiresApplication ? "Solicitar Peak" : `Voy ${plan.name}`}</Link>
+                  <Link href={href}>{plan.requiresApplication ? `Solicitar ${plan.name}` : `Voy ${plan.name}`}</Link>
                 </Button>
               </CardFooter>
             </Card>
