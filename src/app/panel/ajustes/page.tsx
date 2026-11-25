@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireStaff } from "@/lib/auth/dal";
+import { AvatarUpload } from "@/features/profile/avatar-upload";
+import { avatarUrl } from "@/features/profile/avatar.server";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DigestToggle, SettingRow, SignupToggle } from "@/features/config/settings-form";
@@ -37,6 +39,14 @@ export default async function SettingsPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <h1 className="text-3xl font-extrabold">Ajustes</h1>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Tu foto de perfil</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AvatarUpload profileId={viewer.id} name={viewer.fullName} currentUrl={await avatarUrl(viewer.avatarPath)} />
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Mis avisos</CardTitle>

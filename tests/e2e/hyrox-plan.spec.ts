@@ -41,8 +41,9 @@ test("plan HYROX a medida: se solicita, Jaime lo acepta con su precio y ajusta l
     .select("id, plans(key), subscriptions(amount_cents)")
     .eq("profile_id", profile!.id)
     .single();
-  expect(client?.plans?.key).toBe("hyrox");
-  expect(client?.subscriptions?.[0]?.amount_cents).toBe(12000);
+  const created = client as unknown as { plans: { key: string }; subscriptions: { amount_cents: number }[] };
+  expect(created.plans.key).toBe("hyrox");
+  expect(created.subscriptions[0]?.amount_cents).toBe(12000);
 
   // 3) Ajusta lo que incluye solo para este cliente: sin nutrición y 4 directos al mes
   await page.goto(`/panel/clientes/${client!.id}`);

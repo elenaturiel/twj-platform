@@ -17,10 +17,12 @@ import {
 export function UserMenu({
   name,
   email,
+  avatarUrl = null,
   links = [],
 }: {
   name: string;
   email: string;
+  avatarUrl?: string | null;
   links?: { href: string; label: string }[];
 }) {
   const [pending, start] = useTransition();
@@ -28,10 +30,15 @@ export function UserMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="flex size-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        className="flex size-8 items-center justify-center overflow-hidden rounded-full bg-primary text-sm font-bold text-primary-foreground hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
         aria-label="Tu cuenta"
       >
-        {initial}
+        {avatarUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- enlace firmado temporal de Storage
+          <img src={avatarUrl} alt="" className="size-full object-cover" />
+        ) : (
+          initial
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="font-normal">

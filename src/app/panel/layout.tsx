@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Logo } from "@/components/twj/logo";
 import { ThemeToggle } from "@/components/twj/theme-toggle";
 import { UserMenu } from "@/components/twj/user-menu";
+import { avatarUrl } from "@/features/profile/avatar.server";
 import { signOut } from "@/features/auth/actions";
 import { PanelBottomNav, PanelSideNav } from "./panel-nav";
 
@@ -71,6 +72,7 @@ export default async function PanelLayout({ children }: LayoutProps<"/panel">) {
             <UserMenu
               name={viewer.fullName}
               email={viewer.email}
+              avatarUrl={await avatarUrl(viewer.avatarPath)}
               links={[
                 { href: "/panel/ajustes", label: "Ajustes" },
                 { href: "/panel/ajustes/notificaciones", label: "Mis avisos" },

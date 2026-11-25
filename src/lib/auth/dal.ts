@@ -18,6 +18,7 @@ export type Viewer = {
   fullName: string;
   role: Role;
   theme: "system" | "light" | "dark";
+  avatarPath: string | null;
 };
 
 /**
@@ -32,7 +33,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id, email, full_name, role, theme, deleted_at")
+    .select("id, email, full_name, role, theme, avatar_path, deleted_at")
     .eq("id", userId)
     .maybeSingle();
   if (!profile || profile.deleted_at) return null;
@@ -43,6 +44,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
     fullName: profile.full_name,
     role: profile.role as Role,
     theme: profile.theme as Viewer["theme"],
+    avatarPath: profile.avatar_path,
   };
 });
 

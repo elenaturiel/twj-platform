@@ -6,6 +6,7 @@ import { requireClientWithAccess } from "@/lib/auth/dal";
 import { Logo } from "@/components/twj/logo";
 import { ThemeToggle } from "@/components/twj/theme-toggle";
 import { UserMenu } from "@/components/twj/user-menu";
+import { avatarUrl } from "@/features/profile/avatar.server";
 import { formatDate } from "@/features/clients/ui";
 import { OutboxSync } from "@/features/training/ui/outbox-sync";
 import { ClientBottomNav, ClientSideNav } from "./client-nav";
@@ -65,6 +66,7 @@ export default async function ClientLayout({ children }: LayoutProps<"/">) {
               <UserMenu
                 name={ctx.viewer.fullName}
                 email={ctx.viewer.email}
+                avatarUrl={await avatarUrl(ctx.viewer.avatarPath)}
                 links={[
                   { href: "/perfil", label: "Mi ficha" },
                   { href: "/perfil/plan", label: "Mi plan y pagos" },

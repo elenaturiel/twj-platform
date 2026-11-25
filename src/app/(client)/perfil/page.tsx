@@ -6,6 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "@/features/onboarding/profile-form";
 import { OwnCustomFields } from "@/features/tracking/ui/own-custom-fields";
 import type { IntakeInput } from "@/features/onboarding/schemas";
+import { AvatarUpload } from "@/features/profile/avatar-upload";
+import { avatarUrl } from "@/features/profile/avatar.server";
 
 export const metadata: Metadata = { title: "Perfil" };
 
@@ -45,6 +47,11 @@ export default async function ProfilePage() {
           {ctx.viewer.fullName} · {ctx.viewer.email}. Si cambias algo, a Jaime le llega un aviso para ajustar tu plan.
         </p>
       </div>
+      <AvatarUpload
+        profileId={ctx.viewer.id}
+        name={ctx.viewer.fullName}
+        currentUrl={await avatarUrl(ctx.viewer.avatarPath)}
+      />
       <Link
         href="/perfil/plan"
         className="flex items-center justify-between rounded-xl border px-4 py-3 hover:bg-muted/50"
