@@ -1,0 +1,92 @@
+/*
+ * Tokens de marca TWJ — ÚNICO sitio donde se definen colores, radios y sombras.
+ * Los componentes usan los tokens semánticos (--primary, --background…), nunca hex sueltos.
+ *
+ * TODO(marca): sustituir los hex provisionales por los azules exactos de TWJ
+ * (azul claro + azul marino). Solo hay que tocar las primitivas --twj-*.
+ */
+
+:root {
+  /* ── Primitivas de marca (provisionales) ─────────────────────────── */
+  --twj-navy-950: #061226; /* TODO(marca): navy más oscuro */
+  --twj-navy-900: #0b1f3a; /* TODO(marca): navy principal */
+  --twj-navy-800: #12305a;
+  --twj-navy-700: #1b427a;
+  --twj-blue-500: #3a9ad9; /* TODO(marca): azul claro principal */
+  --twj-blue-400: #5fb3ea;
+  --twj-blue-300: #8fcbf2;
+  --twj-blue-100: #e3f2fc;
+  --twj-blue-50: #f3f9fe;
+  --twj-white: #ffffff;
+  --twj-gray-50: #f7f8fa;
+  --twj-gray-100: #eef1f5;
+  --twj-gray-200: #dde3ea;
+  --twj-gray-400: #9aa6b5;
+  --twj-gray-600: #5b6878;
+  --twj-gray-900: #141b24;
+  --twj-success: #1f9d6b;
+  --twj-warning: #d98a1c;
+  --twj-danger: #d64545;
+
+  /* ── Tokens semánticos: modo claro ───────────────────────────────── */
+  --background: var(--twj-white);
+  --foreground: var(--twj-navy-900);
+  --card: var(--twj-white);
+  --card-foreground: var(--twj-navy-900);
+  --popover: var(--twj-white);
+  --popover-foreground: var(--twj-navy-900);
+  --primary: var(--twj-navy-900);
+  --primary-foreground: var(--twj-white);
+  --secondary: var(--twj-blue-100);
+  --secondary-foreground: var(--twj-navy-900);
+  --muted: var(--twj-gray-100);
+  --muted-foreground: var(--twj-gray-600);
+  --accent: var(--twj-blue-500);
+  --accent-foreground: var(--twj-white);
+  --destructive: var(--twj-danger);
+  --success: var(--twj-success);
+  --warning: var(--twj-warning);
+  --border: var(--twj-gray-200);
+  --input: var(--twj-gray-200);
+  --ring: var(--twj-blue-500);
+  --chart-1: var(--twj-blue-500);
+  --chart-2: var(--twj-navy-700);
+  --chart-3: var(--twj-blue-300);
+  --chart-4: var(--twj-success);
+  --chart-5: var(--twj-warning);
+  --sidebar: var(--twj-navy-900);
+  --sidebar-foreground: var(--twj-blue-50);
+  --sidebar-primary: var(--twj-blue-500);
+  --sidebar-primary-foreground: var(--twj-white);
+  --sidebar-accent: var(--twj-navy-800);
+  --sidebar-accent-foreground: var(--twj-white);
+  --sidebar-border: var(--twj-navy-800);
+  --sidebar-ring: var(--twj-blue-400);
+
+  --radius: 0.75rem;
+  --shadow-card: 0 1px 2px rgb(11 31 58 / 0.06), 0 4px 12px rgb(11 31 58 / 0.06);
+}
+
+/* ── Modo oscuro (clase .dark que pone next-themes: sistema o selector manual) ── */
+.dark {
+  --background: var(--twj-navy-950);
+  --foreground: var(--twj-blue-50);
+  --card: var(--twj-navy-900);
+  --card-foreground: var(--twj-blue-50);
+  --popover: var(--twj-navy-900);
+  --popover-foreground: var(--twj-blue-50);
+  --primary: var(--twj-blue-400);
+  --primary-foreground: var(--twj-navy-950);
+  --secondary: var(--twj-navy-800);
+  --secondary-foreground: var(--twj-blue-50);
+  --muted: var(--twj-navy-800);
+  --muted-foreground: var(--twj-gray-400);
+  --accent: var(--twj-blue-400);
+  --accent-foreground: var(--twj-navy-950);
+  --border: rgb(255 255 255 / 0.1);
+  --input: rgb(255 255 255 / 0.15);
+  --ring: var(--twj-blue-400);
+  --sidebar: var(--twj-navy-950);
+  --sidebar-border: rgb(255 255 255 / 0.08);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
+}

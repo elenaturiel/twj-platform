@@ -1,0 +1,41 @@
+import { defineConfig, devices } from "@playwright/test";
+
+// En local, las claves de Supabase están en .env.local (en CI vienen del entorno)
+try {
+  process.loadEnvFile(".env.local");
+} catch {}
+
+const PORT = Number(process.env.E2E_PORT ?? 3000);
+
+/**
+ * E2E contra Supabase local (`pnpm db:start && pnpm db:reset && pnpm db:seed`)
+ * y el simulador de pagos (PAYMENTS_MOCK=1). En CI se arranca el build de producción.
+ */
+export default defineConfig({
+  testDir: "tests/e2e",
+  timeout: 60_000,
+  fullyParallel: false,
+  // De uno en uno: algunas pruebas cambian ajustes globales (p. ej. el alta abierta)
+  workers: 1,
+  retries: process.env.CI ? 1 : 0,
+  reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
+  use: {
+    baseURL: `http://localhost:${PORT}`,
+    locale: "es-ES",
+    timezoneId: "Europe/Madrid",
+    trace: "retain-on-failure",
+    // El aviso de cookies ya "visto" para que no tape botones (hay un test propio)
+    storageState: {
+      cookies: [],
+      origins: [{ origin: `http://localhost:${PORT}`, localStorage: [{ name: "twj-cookie-notice", value: "e2e" }] }],
+    },
+  },
+  projects: [{ name: "mobile", use: { ...devices["Pixel 7"] } }],
+  webServer: {
+    command: process.env.CI ? `pnpm start -p ${PORT}` : `pnpm dev -p ${PORT}`,
+    url: `http://localhost:${PORT}/login`,
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+    env: { PAYMENTS_MOCK: "1" },
+  },
+});

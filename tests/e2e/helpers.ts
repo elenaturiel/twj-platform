@@ -1,0 +1,32 @@
+import { createClient } from "@supabase/supabase-js";
+import { expect, type Page } from "@playwright/test";
+
+export const DEMO_PASSWORD = "twj-demo-1234";
+
+export async function login(page: Page, email: string, password = DEMO_PASSWORD) {
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Contraseña", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Entrar", exact: true }).click();
+  // Espera a que la sesión esté creada antes de navegar a otra página
+  await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 20_000 });
+}
+
+export function uniqueEmail(prefix: string) {
+  return `${prefix}.${Date.now()}.${Math.floor(Math.random() * 1e4)}@e2e.local`;
+}
+
+export async function expectToast(page: Page, text: string | RegExp) {
+  await expect(page.getByText(text).first()).toBeVisible();
+}
+
+/** Cliente con la clave secreta LOCAL para preparar datos de prueba (nunca contra producción). */
+export function testDb() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+  if (!/127\.0\.0\.1|localhost/.test(url)) throw new Error("testDb solo funciona contra Supabase local");
+  return createClient(url, process.env.SUPABASE_SECRET_KEY ?? "", { auth: { persistSession: false } });
+}
+
+export function todayMadrid() {
+  return new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+}
